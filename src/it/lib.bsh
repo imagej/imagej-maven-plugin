@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 
 assertTrue(message, condition) {
 	if (!condition) {
@@ -18,6 +19,14 @@ readFile(file) {
 		builder.append("> ").append(line).append("\n");
 	}
 	return builder.toString();
+}
+
+touchFile(file) {
+	if (file.exists()) {
+		file.setLastModified(System.currentTimeMillis());
+	} else {
+		new FileWriter(file).close();
+	}
 }
 
 target = new File(basedir, "target");
