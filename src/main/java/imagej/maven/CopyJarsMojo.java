@@ -166,7 +166,6 @@ public class CopyJarsMojo extends AbstractMojo {
 	private File imagejDirectory;
 
 	@SuppressWarnings("unchecked")
-	@Override
 	public void execute() throws MojoExecutionException {
 		if (imagejDirectoryProperty == null) {
 			getLog().info("No property name for the ImageJ.app/ directory location was specified; Skipping");

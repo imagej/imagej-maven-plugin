@@ -75,7 +75,6 @@ public class SetRootDirPropertyMojo extends AbstractMojo {
 	 */
 	private List<MavenProject> reactorProjects;
 
-	@Override
 	public void execute() throws MojoExecutionException {
 		if (currentProject.getProperties().getProperty(rootdirPropertyName) != null) {
 			getLog().debug("Using previously defined rootdir");
