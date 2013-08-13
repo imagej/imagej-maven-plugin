@@ -1,0 +1,3 @@
+source(new File(basedir, "../../../src/it/lib.bsh").getPath());
+
+if (!ijDir.exists()) ijDir.mkdirs();
