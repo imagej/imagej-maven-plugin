@@ -10,6 +10,12 @@ assertTrue(message, condition) {
 	}
 }
 
+assertLogContains(needle) {
+	buildLog = readFile(new File(basedir, "build.log"));
+	assertTrue("Should contain '" + needle + "':\n" + buildLog,
+		buildLog.contains(needle));
+}
+
 readFile(file) {
 	builder = new StringBuilder();
 	reader = new BufferedReader(new FileReader(file));

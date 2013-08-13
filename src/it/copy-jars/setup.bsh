@@ -1,3 +1,4 @@
 source(new File(basedir, "../../../src/it/lib.bsh").getPath());
 
-if (!ijDir.exists()) ijDir.mkdirs();
+if (!plugins.exists()) plugins.mkdirs();
+touchFile(new File(plugins, "Example_PlugIn-0.9.0-obsolete.jar"));
