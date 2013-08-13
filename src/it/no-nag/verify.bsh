@@ -1,0 +1,7 @@
+source(new File(basedir, "../../../src/it/lib.bsh").getPath());
+
+assertTrue("Should not exist: " + ijDir, !ijDir.exists());
+
+buildLog = readFile(new File(basedir, "build.log"));
+assertTrue("Should not contain 'Skipping copy-jars':\n" + buildLog,
+	!buildLog.contains("Skipping copy-jars"));
