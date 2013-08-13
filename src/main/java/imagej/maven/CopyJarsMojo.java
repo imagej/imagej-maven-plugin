@@ -87,10 +87,11 @@ public class CopyJarsMojo extends AbstractMojo {
 
 	/**
 	 * The name of the property pointing to the ImageJ.app/ directory.
-	 *
-	 * If no property of that name exists, or if it is not a directory,
-	 * no .jar files are copied.
-	 *
+	 * <p>
+	 * If no property of that name exists, or if it is not a directory, no .jar
+	 * files are copied.
+	 * </p>
+	 * 
 	 * @parameter default-value="imagej.app.directory"
 	 */
 	private String imagejDirectoryProperty;
