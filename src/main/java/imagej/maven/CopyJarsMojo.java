@@ -282,11 +282,10 @@ public class CopyJarsMojo extends AbstractMojo {
 
 		if (!force && target.exists() && target.lastModified() > source.lastModified()) {
 			getLog().info("Dependency " + fileName + " is already there; skipping");
-			return;
+		} else {
+			getLog().info("Copying " + fileName + " to " + targetDirectory);
+			FileUtils.copyFile(source, target);
 		}
-
-		getLog().info("Copying " + fileName + " to " + targetDirectory);
-		FileUtils.copyFile(source, target);
 
 		final Collection<File> otherVersions = getEncroachingVersions(target);
 		if (otherVersions != null && !otherVersions.isEmpty()) {
