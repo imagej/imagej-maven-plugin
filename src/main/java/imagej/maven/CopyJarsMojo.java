@@ -54,6 +54,7 @@ import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
@@ -175,7 +176,7 @@ public class CopyJarsMojo extends AbstractMojo {
 		if (path == null)
 			path = project.getProperties().getProperty(imagejDirectoryProperty);
 		if (path == null) {
-			getLog().info("Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
+			if (hasIJ1Dependency()) getLog().info("Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
 			return;
 		}
 		final String interpolated = interpolate(path);
@@ -210,6 +211,16 @@ public class CopyJarsMojo extends AbstractMojo {
 		} catch (DependencyTreeBuilderException e) {
 			throw new MojoExecutionException("Could not get the dependencies for " + project.getArtifactId(), e);
 		}
+	}
+
+	private boolean hasIJ1Dependency() {
+		@SuppressWarnings("unchecked")
+		final List<Dependency> dependencies = project.getDependencies();
+		for (final Dependency dependency : dependencies) {
+			final String artifactId = dependency.getArtifactId();
+			if ("ij".equals(artifactId) || "imagej".equals(artifactId)) return true;
+		}
+		return false;
 	}
 
 	private String interpolate(final String original) throws MojoExecutionException {
