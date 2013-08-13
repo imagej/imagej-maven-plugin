@@ -36,12 +36,16 @@
 package imagej.maven;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
@@ -90,6 +94,18 @@ public class CopyJarsMojo extends AbstractMojo {
 	 * @parameter default-value="imagej.app.directory"
 	 */
 	private String imagejDirectoryProperty;
+
+	/**
+	 * Whether to delete other versions when copying the files.
+	 * <p>
+	 * When copying a file and its dependencies to an ImageJ.app/ directory and
+	 * there are other versions of the same file, we can warn or delete those
+	 * other versions.
+	 * </p>
+	 * 
+	 * @parameter default-value="false"
+	 */
+	private boolean deleteOtherVersions;
 
 	/**
 	 * @parameter expression="${project}"
@@ -270,6 +286,20 @@ public class CopyJarsMojo extends AbstractMojo {
 
 		getLog().info("Copying " + fileName + " to " + targetDirectory);
 		FileUtils.copyFile(source, target);
+
+		final Collection<File> otherVersions = getEncroachingVersions(target);
+		if (otherVersions != null && !otherVersions.isEmpty()) {
+			for (final File file : otherVersions) {
+				if (!deleteOtherVersions) {
+					getLog().warn("Possibly incompatible version exists: " + file.getName());
+				} else if (file.delete()) {
+					getLog().info("Deleted overridden " + file.getName());
+				} else {
+					getLog().warn("Could not delete overridden " + file.getName());
+				}
+			}
+		}
+
 	}
 
 	private static boolean isIJ1Plugin(final File file) {
@@ -292,4 +322,37 @@ public class CopyJarsMojo extends AbstractMojo {
 		return false;
 	}
 
+	private final static Pattern versionPattern = Pattern.compile("(.+?)"
+			+ "(-\\d+(\\.\\d+|\\d{7})+[a-z]?\\d?(-[A-Za-z0-9.]+?|\\.GA)*?)?"
+			+ "((-(swing|swt|sources|javadoc))?(\\.jar(-[a-z]*)?))");
+	private final static int PREFIX_INDEX = 1;
+	private final static int SUFFIX_INDEX = 5;
+
+	private static Collection<File> getEncroachingVersions(final File file) {
+		final Matcher matcher = versionPattern.matcher(file.getName());
+		if (!matcher.matches()) return null;
+
+		final String prefix = matcher.group(PREFIX_INDEX);
+		final String suffix = matcher.group(SUFFIX_INDEX);
+		final File parent = file.getParentFile();
+		final File directory = parent != null ? parent : file.getAbsoluteFile().getParentFile();
+		if (directory == null) return null;
+		final File[] candidates = directory.listFiles(new FilenameFilter() {
+
+			public boolean accept(File dir, String name) {
+				if (!name.startsWith(prefix)) return false;
+				final Matcher matcher = versionPattern.matcher(name);
+				return matcher.matches() &&
+						prefix.equals(matcher.group(PREFIX_INDEX)) &&
+						suffix.equals(matcher.group(SUFFIX_INDEX));
+			}
+		});
+		if (candidates == null || candidates.length == (file.exists() ? 1 : 0)) return null;
+
+		final Collection<File> result = new ArrayList<File>();
+		for (final File candidate : candidates) {
+			if (!candidate.equals(file)) result.add(candidate);
+		}
+		return result;
+	}
 }
