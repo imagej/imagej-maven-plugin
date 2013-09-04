@@ -31,6 +31,7 @@
 
   <properties>
     <imagej.app.directory>${project.basedir}/target/ImageJ.app/</imagej.app.directory>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <build>

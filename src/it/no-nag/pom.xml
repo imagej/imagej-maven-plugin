@@ -10,6 +10,10 @@
   <packaging>jar</packaging>
   <name>An example project without ImageJ 1.x dependency to test the CopyJarsMojo</name>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
