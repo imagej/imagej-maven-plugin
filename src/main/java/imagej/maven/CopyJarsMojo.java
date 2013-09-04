@@ -104,7 +104,7 @@ public class CopyJarsMojo extends AbstractMojo {
 	 * other versions.
 	 * </p>
 	 * 
-	 * @parameter default-value="false"
+	 * @parameter default-value="false" expression="${delete.other.versions}"
 	 */
 	private boolean deleteOtherVersions;
 
