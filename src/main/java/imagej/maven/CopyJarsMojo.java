@@ -199,7 +199,7 @@ public class CopyJarsMojo extends AbstractMojo {
 		final String interpolated = interpolate(path);
 		imagejDirectory = new File(interpolated);
 		if (!imagejDirectory.isDirectory()) {
-			getLog().warn("'" + imagejDirectory + "'" + (interpolated.equals(path) ? "" : " (" + path + ")") + "is not an ImageJ.app/ directory; Skipping copy-jars");
+			getLog().warn("'" + imagejDirectory + "'" + (interpolated.equals(path) ? "" : " (" + path + ")") + " is not an ImageJ.app/ directory; Skipping copy-jars");
 			return;
 		}
 
