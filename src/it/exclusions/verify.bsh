@@ -1,0 +1,6 @@
+source(new File(basedir, "../../../src/it/lib.bsh").getPath());
+
+jars = new File(ijDir, "jars");
+assertTrue("Does not have to-copy.jar", new File(jars, "to-copy-1.0.0-SNAPSHOT.jar").exists());
+assertTrue("Does not have dependency.jar", new File(jars, "dependency-1.0.0-SNAPSHOT.jar").exists());
+assertTrue("Has excluded.jar", !new File(jars, "excluded-1.0.0-SNAPSHOT.jar").exists());
