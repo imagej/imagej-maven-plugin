@@ -17,15 +17,10 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
-    <!-- <dependency>
+    <dependency>
       <groupId>net.imagej</groupId>
       <artifactId>ij</artifactId>
-      <version>1.47</version>
-    </dependency> -->
-    <dependency>
-      <groupId>gov.nih.imagej</groupId>
-      <artifactId>imagej</artifactId>
-      <version>1.47</version>
+      <version>1.48s</version>
     </dependency>
   </dependencies>
 

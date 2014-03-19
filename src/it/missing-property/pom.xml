@@ -16,9 +16,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>gov.nih.imagej</groupId>
-      <artifactId>imagej</artifactId>
-      <version>1.47</version>
+      <groupId>net.imagej</groupId>
+      <artifactId>ij</artifactId>
+      <version>1.48s</version>
     </dependency>
   </dependencies>
 
