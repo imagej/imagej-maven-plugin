@@ -69,7 +69,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * files are copied.
 	 * </p>
 	 * 
-	 * @parameter expression="${imagej.app.directory}"
+	 * @parameter property="imagej.app.directory"
 	 * @required
 	 */
 	private String imagejDirectoryProperty;
@@ -82,7 +82,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 * 
-	 * @parameter expression="${delete.other.versions}"
+	 * @parameter property="delete.other.versions"
 	 */
 	private String deleteOtherVersionsProperty;
 
@@ -94,7 +94,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * .
 	 * </p>
 	 * 
-	 * @parameter expression="${remoteRepositories}"
+	 * @parameter property="remoteRepositories"
 	 * @readonly
 	 */
 	private String remoteRepositories;
@@ -102,7 +102,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	/**
 	 * Location of the local repository.
 	 * 
-	 * @parameter expression="${localRepository}"
+	 * @parameter property="localRepository"
 	 * @readonly
 	 */
 	private ArtifactRepository localRepository;
@@ -149,7 +149,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * The groupId of the artifact to download. Ignored if {@link #artifact} is
 	 * used.
 	 * 
-	 * @parameter expression="${groupId}"
+	 * @parameter property="groupId"
 	 */
 	private String groupId;
 
@@ -157,7 +157,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * The artifactId of the artifact to download. Ignored if {@link #artifact} is
 	 * used.
 	 * 
-	 * @parameter expression="${artifactId}"
+	 * @parameter property="artifactId"
 	 */
 	private String artifactId;
 
@@ -165,26 +165,26 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * The version of the artifact to download. Ignored if {@link #artifact} is
 	 * used.
 	 * 
-	 * @parameter expression="${version}"
+	 * @parameter property="version"
 	 */
 	private String version;
 
 	/**
 	 * A string of the form groupId:artifactId:version[:packaging][:classifier].
 	 * 
-	 * @parameter expression="${artifact}"
+	 * @parameter property="artifact"
 	 */
 	private String artifact;
 
 	/**
 	 * Whether to force overwriting files.
 	 * 
-	 * @parameter expression="${force}"
+	 * @parameter property="force"
 	 */
 	private boolean force;
 
 	/**
-	 * @parameter expression="${project.remoteArtifactRepositories}"
+	 * @parameter property="project.remoteArtifactRepositories"
 	 * @required
 	 * @readonly
 	 */
