@@ -10,7 +10,7 @@
 
 	<groupId>net.imagej</groupId>
 	<artifactId>imagej-maven-plugin</artifactId>
-	<version>0.4.1-SNAPSHOT</version>
+	<version>0.4.1</version>
 	<packaging>maven-plugin</packaging>
 
 	<name>ImageJ Maven plugin</name>
@@ -121,7 +121,7 @@ Wisconsin-Madison.</organizationName>
 	<scm>
 		<connection>scm:git:git://github.com/imagej/imagej-maven-plugin</connection>
 		<developerConnection>scm:git:git@github.com:imagej/imagej-maven-plugin</developerConnection>
-		<tag>HEAD</tag>
+		<tag>imagej-maven-plugin-0.4.1</tag>
 		<url>https://github.com/imagej/imagej-maven-plugin</url>
 	</scm>
 
