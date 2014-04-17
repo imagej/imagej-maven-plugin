@@ -104,12 +104,12 @@ public class CopyJarsMojo extends AbstractMojo {
 	 * other versions.
 	 * </p>
 	 * 
-	 * @parameter default-value="false" expression="${delete.other.versions}"
+	 * @parameter default-value="false" property="delete.other.versions"
 	 */
 	private boolean deleteOtherVersions;
 
 	/**
-	 * @parameter expression="${project}"
+	 * @parameter property="project"
 	 * @required
 	 * @readonly
 	 */
@@ -118,14 +118,14 @@ public class CopyJarsMojo extends AbstractMojo {
     /**
      * Session
      *
-     * @parameter expression="${session}
+     * @parameter property="session"
      */
     private MavenSession session;
 
 	/**
 	 * List of Remote Repositories used by the resolver
 	 * 
-	 * @parameter expression="${project.remoteArtifactRepositories}"
+	 * @parameter property="project.remoteArtifactRepositories"
 	 * @readonly
 	 * @required
 	 */
@@ -134,7 +134,7 @@ public class CopyJarsMojo extends AbstractMojo {
 	/**
 	 * Location of the local repository.
 	 * 
-	 * @parameter expression="${localRepository}"
+	 * @parameter property="localRepository"
 	 * @readonly
 	 * @required
 	 */
