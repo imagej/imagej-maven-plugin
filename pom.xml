@@ -63,16 +63,6 @@
 				<version>2.4.1</version>
 			</plugin>
 		</plugins>
-
-		<!-- We use wagon-webdav-jackrabbit 1.0 for deploys, since it is
-		     compatible with both Maven 2.2.x and Maven 3.0.x cross-platform. -->
-		<extensions>
-			<extension>
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-webdav-jackrabbit</artifactId>
-				<version>1.0</version>
-			</extension>
-		</extensions>
 	</build>
 
 	<dependencies>
@@ -117,30 +107,6 @@
 			<version>1.14</version>
 		</dependency>
 	</dependencies>
-
-	<repositories>
-		<!-- NB: for project parent -->
-		<repository>
-			<id>imagej.public</id>
-			<url>http://maven.imagej.net/content/groups/public</url>
-		</repository>
-	</repositories>
-
-
-	<!-- The following configuration allows authorized developers
-	     to deploy artifacts to the ImageJ Maven repository. -->
-	<distributionManagement>
-		<repository>
-			<id>imagej.releases</id>
-			<name>ImageJ Releases Repository</name>
-			<url>dav:http://maven.imagej.net/content/repositories/releases</url>
-		</repository>
-		<snapshotRepository>
-			<id>imagej.snapshots</id>
-			<name>ImageJ Snapshots Repository</name>
-			<url>dav:http://maven.imagej.net/content/repositories/snapshots</url>
-		</snapshotRepository>
-	</distributionManagement>
 
 	<scm>
 		<connection>scm:git:git://github.com/imagej/imagej-maven-plugin</connection>
