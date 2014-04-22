@@ -22,6 +22,10 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+	<prerequisites>
+		<maven>${maven.version}</maven>
+	</prerequisites>
+
 	<build>
 		<!-- It is nice for "mvn" with no arguments to do something reasonable. -->
 		<defaultGoal>install</defaultGoal>
