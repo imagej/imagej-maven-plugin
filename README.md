@@ -25,12 +25,6 @@ It is recommended to use it implicitly by making the
     <version>1.162</version>
   </parent>
   ...
-  <repositories>
-    <repository>
-      <id>imagej.public</id>
-      <url>http://maven.imagej.net/content/groups/public</url>
-    </repository>
-  </repositories>
 </project>
 ```
 
