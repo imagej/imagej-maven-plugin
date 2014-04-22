@@ -36,44 +36,23 @@
 package imagej.maven;
 
 import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
-import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.dependency.tree.DependencyNode;
 import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
 import org.apache.maven.shared.dependency.tree.DependencyTreeBuilderException;
 import org.apache.maven.shared.dependency.tree.traversal.CollectingDependencyNodeVisitor;
-import org.codehaus.plexus.interpolation.EnvarBasedValueSource;
-import org.codehaus.plexus.interpolation.ObjectBasedValueSource;
-import org.codehaus.plexus.interpolation.PrefixAwareRecursionInterceptor;
-import org.codehaus.plexus.interpolation.PrefixedValueSourceWrapper;
-import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
-import org.codehaus.plexus.interpolation.RecursionInterceptor;
-import org.codehaus.plexus.interpolation.RegexBasedInterpolator;
-import org.codehaus.plexus.util.FileUtils;
 
 /**
  * Copies .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -83,7 +62,7 @@ import org.codehaus.plexus.util.FileUtils;
  * @goal copy-jars
  * @phase install
  */
-public class CopyJarsMojo extends AbstractMojo {
+public class CopyJarsMojo extends AbstractCopyJarsMojo {
 
 	/**
 	 * The name of the property pointing to the ImageJ.app/ directory.
@@ -194,11 +173,11 @@ public class CopyJarsMojo extends AbstractMojo {
 		if (path == null) path =
 			project.getProperties().getProperty(imagejDirectoryProperty);
 		if (path == null) {
-			if (hasIJ1Dependency()) getLog().info(
+			if (hasIJ1Dependency(project)) getLog().info(
 				"Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
 			return;
 		}
-		final String interpolated = interpolate(path);
+		final String interpolated = interpolate(path, project, session);
 		imagejDirectory = new File(interpolated);
 		if (!imagejDirectory.isDirectory()) {
 			getLog().warn(
@@ -229,7 +208,9 @@ public class CopyJarsMojo extends AbstractMojo {
 					if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) &&
 						!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
 					try {
-						installArtifact(artifact, false);
+						installArtifact(artifact, imagejDirectory, false,
+							deleteOtherVersions, artifactResolver, remoteRepositories,
+							localRepository);
 					}
 					catch (Exception e) {
 						throw new MojoExecutionException("Could not copy " + artifact +
@@ -242,161 +223,5 @@ public class CopyJarsMojo extends AbstractMojo {
 			throw new MojoExecutionException("Could not get the dependencies for " +
 				project.getArtifactId(), e);
 		}
-	}
-
-	private boolean hasIJ1Dependency() {
-		@SuppressWarnings("unchecked")
-		final List<Dependency> dependencies = project.getDependencies();
-		for (final Dependency dependency : dependencies) {
-			final String artifactId = dependency.getArtifactId();
-			if ("ij".equals(artifactId) || "imagej".equals(artifactId)) return true;
-		}
-		return false;
-	}
-
-	private String interpolate(final String original)
-		throws MojoExecutionException
-	{
-		if (original == null || original.indexOf("${") < 0) return original;
-		try {
-			RegexBasedInterpolator interpolator = new RegexBasedInterpolator();
-
-			interpolator.addValueSource(new EnvarBasedValueSource());
-			interpolator.addValueSource(new PropertiesBasedValueSource(System
-				.getProperties()));
-
-			List<String> synonymPrefixes = new ArrayList<String>();
-			synonymPrefixes.add("project.");
-			synonymPrefixes.add("pom.");
-
-			PrefixedValueSourceWrapper modelWrapper =
-				new PrefixedValueSourceWrapper(new ObjectBasedValueSource(project
-					.getModel()), synonymPrefixes, true);
-			interpolator.addValueSource(modelWrapper);
-
-			PrefixedValueSourceWrapper pomPropertyWrapper =
-				new PrefixedValueSourceWrapper(new PropertiesBasedValueSource(project
-					.getModel().getProperties()), synonymPrefixes, true);
-			interpolator.addValueSource(pomPropertyWrapper);
-
-			interpolator.addValueSource(new PropertiesBasedValueSource(session
-				.getExecutionProperties()));
-
-			RecursionInterceptor recursionInterceptor =
-				new PrefixAwareRecursionInterceptor(synonymPrefixes, true);
-			return interpolator.interpolate(original, recursionInterceptor);
-		}
-		catch (Exception e) {
-			throw new MojoExecutionException("Could not interpolate '" + original +
-				"'", e);
-		}
-	}
-
-	private void installArtifact(final Artifact artifact, boolean force)
-		throws ArtifactResolutionException, ArtifactNotFoundException, IOException
-	{
-		artifactResolver.resolve(artifact, remoteRepositories, localRepository);
-
-		if (!"jar".equals(artifact.getType())) return;
-
-		final File source = artifact.getFile();
-		final File targetDirectory;
-		if ("loci".equals(artifact.getGroupId()) &&
-			(source.getName().startsWith("scifio-4.4.") || source.getName()
-				.startsWith("jai_imageio-4.4.")))
-		{
-			targetDirectory = new File(imagejDirectory, "jars/bio-formats");
-		}
-		else {
-			targetDirectory =
-				new File(imagejDirectory, isIJ1Plugin(source) ? "plugins" : "jars");
-		}
-		final String fileName =
-			"Fiji_Updater".equals(artifact.getArtifactId()) ? artifact
-				.getArtifactId() +
-				".jar" : source.getName();
-		final File target = new File(targetDirectory, fileName);
-
-		if (!force && target.exists() &&
-			target.lastModified() > source.lastModified())
-		{
-			getLog().info("Dependency " + fileName + " is already there; skipping");
-		}
-		else {
-			getLog().info("Copying " + fileName + " to " + targetDirectory);
-			FileUtils.copyFile(source, target);
-		}
-
-		final Collection<File> otherVersions = getEncroachingVersions(target);
-		if (otherVersions != null && !otherVersions.isEmpty()) {
-			for (final File file : otherVersions) {
-				if (!deleteOtherVersions) {
-					getLog().warn(
-						"Possibly incompatible version exists: " + file.getName());
-				}
-				else if (file.delete()) {
-					getLog().info("Deleted overridden " + file.getName());
-				}
-				else {
-					getLog().warn("Could not delete overridden " + file.getName());
-				}
-			}
-		}
-
-	}
-
-	private static boolean isIJ1Plugin(final File file) {
-		final String name = file.getName();
-		if (name.indexOf('_') < 0 || !file.exists()) return false;
-		if (file.isDirectory()) return new File(file,
-			"src/main/resources/plugins.config").exists();
-		if (name.endsWith(".jar")) try {
-			final JarFile jar = new JarFile(file);
-			for (JarEntry entry : Collections.list(jar.entries()))
-				if (entry.getName().equals("plugins.config")) {
-					jar.close();
-					return true;
-				}
-			jar.close();
-		}
-		catch (Throwable t) {
-			// obviously not a plugin...
-		}
-		return false;
-	}
-
-	private final static Pattern versionPattern = Pattern.compile("(.+?)"
-		+ "(-\\d+(\\.\\d+|\\d{7})+[a-z]?\\d?(-[A-Za-z0-9.]+?|\\.GA)*?)?"
-		+ "((-(swing|swt|sources|javadoc))?(\\.jar(-[a-z]*)?))");
-	private final static int PREFIX_INDEX = 1;
-	private final static int SUFFIX_INDEX = 5;
-
-	private static Collection<File> getEncroachingVersions(final File file) {
-		final Matcher matcher = versionPattern.matcher(file.getName());
-		if (!matcher.matches()) return null;
-
-		final String prefix = matcher.group(PREFIX_INDEX);
-		final String suffix = matcher.group(SUFFIX_INDEX);
-		final File parent = file.getParentFile();
-		final File directory =
-			parent != null ? parent : file.getAbsoluteFile().getParentFile();
-		if (directory == null) return null;
-		final File[] candidates = directory.listFiles(new FilenameFilter() {
-
-			public boolean accept(File dir, String name) {
-				if (!name.startsWith(prefix)) return false;
-				final Matcher matcher = versionPattern.matcher(name);
-				return matcher.matches() &&
-					prefix.equals(matcher.group(PREFIX_INDEX)) &&
-					suffix.equals(matcher.group(SUFFIX_INDEX));
-			}
-		});
-		if (candidates == null || candidates.length == (file.exists() ? 1 : 0)) return null;
-
-		final Collection<File> result = new ArrayList<File>();
-		for (final File candidate : candidates) {
-			if (!candidate.equals(file)) result.add(candidate);
-		}
-		return result;
 	}
 }
