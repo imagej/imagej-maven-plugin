@@ -129,7 +129,7 @@ public class CopyJarsMojo extends AbstractMojo {
 	 * @readonly
 	 * @required
 	 */
-	protected List<String> remoteRepositories;
+	protected List<ArtifactRepository> remoteRepositories;
 
 	/**
 	 * Location of the local repository.
