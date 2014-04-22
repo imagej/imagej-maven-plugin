@@ -97,7 +97,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	/**
 	 * Session
 	 * 
-	 * @parameter property="${session}
+	 * @parameter property="session"
 	 */
 	private MavenSession session;
 
