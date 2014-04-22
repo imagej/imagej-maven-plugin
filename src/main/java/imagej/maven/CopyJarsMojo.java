@@ -76,10 +76,10 @@ import org.codehaus.plexus.interpolation.RegexBasedInterpolator;
 import org.codehaus.plexus.util.FileUtils;
 
 /**
- * Copies .jar artifacts and their dependencies into an ImageJ.app/ directory structure.
+ * Copies .jar artifacts and their dependencies into an ImageJ.app/ directory
+ * structure.
  * 
  * @author Johannes Schindelin
- * 
  * @goal copy-jars
  * @phase install
  */
@@ -115,12 +115,12 @@ public class CopyJarsMojo extends AbstractMojo {
 	 */
 	private MavenProject project;
 
-    /**
-     * Session
-     *
-     * @parameter expression="${session}
-     */
-    private MavenSession session;
+	/**
+	 * Session
+	 * 
+	 * @parameter expression="${session}
+	 */
+	private MavenSession session;
 
 	/**
 	 * List of Remote Repositories used by the resolver
@@ -142,7 +142,7 @@ public class CopyJarsMojo extends AbstractMojo {
 
 	/**
 	 * @component role="org.apache.maven.artifact.metadata.ArtifactMetadataSource"
-     *            hint="maven"
+	 *            hint="maven"
 	 * @required
 	 * @readonly
 	 */
@@ -180,53 +180,67 @@ public class CopyJarsMojo extends AbstractMojo {
 	 */
 	protected ArtifactResolver artifactResolver;
 
-
 	private File imagejDirectory;
 
 	@SuppressWarnings("unchecked")
 	public void execute() throws MojoExecutionException {
 		if (imagejDirectoryProperty == null) {
-			getLog().info("No property name for the ImageJ.app/ directory location was specified; Skipping");
+			getLog()
+				.info(
+					"No property name for the ImageJ.app/ directory location was specified; Skipping");
 			return;
 		}
 		String path = System.getProperty(imagejDirectoryProperty);
-		if (path == null)
-			path = project.getProperties().getProperty(imagejDirectoryProperty);
+		if (path == null) path =
+			project.getProperties().getProperty(imagejDirectoryProperty);
 		if (path == null) {
-			if (hasIJ1Dependency()) getLog().info("Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
+			if (hasIJ1Dependency()) getLog().info(
+				"Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
 			return;
 		}
 		final String interpolated = interpolate(path);
 		imagejDirectory = new File(interpolated);
 		if (!imagejDirectory.isDirectory()) {
-			getLog().warn("'" + imagejDirectory + "'" + (interpolated.equals(path) ? "" : " (" + path + ")") + " is not an ImageJ.app/ directory; Skipping copy-jars");
+			getLog().warn(
+				"'" + imagejDirectory + "'" +
+					(interpolated.equals(path) ? "" : " (" + path + ")") +
+					" is not an ImageJ.app/ directory; Skipping copy-jars");
 			return;
 		}
 
 		try {
-			ArtifactFilter artifactFilter = new ScopeArtifactFilter(Artifact.SCOPE_COMPILE);
-			DependencyNode rootNode = treeBuilder.buildDependencyTree(project,
-					localRepository, artifactFactory, artifactMetadataSource,
-					artifactFilter, artifactCollector);
+			ArtifactFilter artifactFilter =
+				new ScopeArtifactFilter(Artifact.SCOPE_COMPILE);
+			DependencyNode rootNode =
+				treeBuilder.buildDependencyTree(project, localRepository,
+					artifactFactory, artifactMetadataSource, artifactFilter,
+					artifactCollector);
 
-			CollectingDependencyNodeVisitor visitor = new CollectingDependencyNodeVisitor();
+			CollectingDependencyNodeVisitor visitor =
+				new CollectingDependencyNodeVisitor();
 			rootNode.accept(visitor);
 
-			for (final DependencyNode dependencyNode : (List<DependencyNode>)visitor.getNodes()) {
+			for (final DependencyNode dependencyNode : (List<DependencyNode>) visitor
+				.getNodes())
+			{
 				if (dependencyNode.getState() == DependencyNode.INCLUDED) {
 					final Artifact artifact = dependencyNode.getArtifact();
 					final String scope = artifact.getScope();
-					if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) && !scope.equals(Artifact.SCOPE_RUNTIME))
-						continue;
+					if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) &&
+						!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
 					try {
 						installArtifact(artifact, false);
-					} catch (Exception e) {
-						throw new MojoExecutionException("Could not copy " + artifact + " to " + imagejDirectory, e);
+					}
+					catch (Exception e) {
+						throw new MojoExecutionException("Could not copy " + artifact +
+							" to " + imagejDirectory, e);
 					}
 				}
 			}
-		} catch (DependencyTreeBuilderException e) {
-			throw new MojoExecutionException("Could not get the dependencies for " + project.getArtifactId(), e);
+		}
+		catch (DependencyTreeBuilderException e) {
+			throw new MojoExecutionException("Could not get the dependencies for " +
+				project.getArtifactId(), e);
 		}
 	}
 
@@ -240,55 +254,75 @@ public class CopyJarsMojo extends AbstractMojo {
 		return false;
 	}
 
-	private String interpolate(final String original) throws MojoExecutionException {
-		if (original == null || original.indexOf("${") < 0)
-			return original;
+	private String interpolate(final String original)
+		throws MojoExecutionException
+	{
+		if (original == null || original.indexOf("${") < 0) return original;
 		try {
 			RegexBasedInterpolator interpolator = new RegexBasedInterpolator();
 
 			interpolator.addValueSource(new EnvarBasedValueSource());
-			interpolator.addValueSource(new PropertiesBasedValueSource(System.getProperties()));
+			interpolator.addValueSource(new PropertiesBasedValueSource(System
+				.getProperties()));
 
 			List<String> synonymPrefixes = new ArrayList<String>();
-			synonymPrefixes.add( "project." );
-			synonymPrefixes.add( "pom." );
+			synonymPrefixes.add("project.");
+			synonymPrefixes.add("pom.");
 
-			PrefixedValueSourceWrapper modelWrapper = new PrefixedValueSourceWrapper(new ObjectBasedValueSource(project.getModel() ), synonymPrefixes, true);
+			PrefixedValueSourceWrapper modelWrapper =
+				new PrefixedValueSourceWrapper(new ObjectBasedValueSource(project
+					.getModel()), synonymPrefixes, true);
 			interpolator.addValueSource(modelWrapper);
 
-			PrefixedValueSourceWrapper pomPropertyWrapper = new PrefixedValueSourceWrapper(new PropertiesBasedValueSource(project.getModel().getProperties()), synonymPrefixes, true);
+			PrefixedValueSourceWrapper pomPropertyWrapper =
+				new PrefixedValueSourceWrapper(new PropertiesBasedValueSource(project
+					.getModel().getProperties()), synonymPrefixes, true);
 			interpolator.addValueSource(pomPropertyWrapper);
 
-			interpolator.addValueSource(new PropertiesBasedValueSource(session.getExecutionProperties()));
+			interpolator.addValueSource(new PropertiesBasedValueSource(session
+				.getExecutionProperties()));
 
-			RecursionInterceptor recursionInterceptor = new PrefixAwareRecursionInterceptor(synonymPrefixes, true);
+			RecursionInterceptor recursionInterceptor =
+				new PrefixAwareRecursionInterceptor(synonymPrefixes, true);
 			return interpolator.interpolate(original, recursionInterceptor);
-		} catch (Exception e) {
-			throw new MojoExecutionException("Could not interpolate '" + original + "'", e);
+		}
+		catch (Exception e) {
+			throw new MojoExecutionException("Could not interpolate '" + original +
+				"'", e);
 		}
 	}
 
-	private void installArtifact(final Artifact artifact, boolean force) throws ArtifactResolutionException, ArtifactNotFoundException, IOException {
+	private void installArtifact(final Artifact artifact, boolean force)
+		throws ArtifactResolutionException, ArtifactNotFoundException, IOException
+	{
 		artifactResolver.resolve(artifact, remoteRepositories, localRepository);
 
-		if (!"jar".equals(artifact.getType()))
-			return;
-
+		if (!"jar".equals(artifact.getType())) return;
 
 		final File source = artifact.getFile();
 		final File targetDirectory;
 		if ("loci".equals(artifact.getGroupId()) &&
-				(source.getName().startsWith("scifio-4.4.") || source.getName().startsWith("jai_imageio-4.4."))) {
+			(source.getName().startsWith("scifio-4.4.") || source.getName()
+				.startsWith("jai_imageio-4.4.")))
+		{
 			targetDirectory = new File(imagejDirectory, "jars/bio-formats");
-		} else {
-			targetDirectory = new File(imagejDirectory, isIJ1Plugin(source) ? "plugins" : "jars");
 		}
-		final String fileName = "Fiji_Updater".equals(artifact.getArtifactId()) ? artifact.getArtifactId() + ".jar" : source.getName();
+		else {
+			targetDirectory =
+				new File(imagejDirectory, isIJ1Plugin(source) ? "plugins" : "jars");
+		}
+		final String fileName =
+			"Fiji_Updater".equals(artifact.getArtifactId()) ? artifact
+				.getArtifactId() +
+				".jar" : source.getName();
 		final File target = new File(targetDirectory, fileName);
 
-		if (!force && target.exists() && target.lastModified() > source.lastModified()) {
+		if (!force && target.exists() &&
+			target.lastModified() > source.lastModified())
+		{
 			getLog().info("Dependency " + fileName + " is already there; skipping");
-		} else {
+		}
+		else {
 			getLog().info("Copying " + fileName + " to " + targetDirectory);
 			FileUtils.copyFile(source, target);
 		}
@@ -297,10 +331,13 @@ public class CopyJarsMojo extends AbstractMojo {
 		if (otherVersions != null && !otherVersions.isEmpty()) {
 			for (final File file : otherVersions) {
 				if (!deleteOtherVersions) {
-					getLog().warn("Possibly incompatible version exists: " + file.getName());
-				} else if (file.delete()) {
+					getLog().warn(
+						"Possibly incompatible version exists: " + file.getName());
+				}
+				else if (file.delete()) {
 					getLog().info("Deleted overridden " + file.getName());
-				} else {
+				}
+				else {
 					getLog().warn("Could not delete overridden " + file.getName());
 				}
 			}
@@ -310,10 +347,9 @@ public class CopyJarsMojo extends AbstractMojo {
 
 	private static boolean isIJ1Plugin(final File file) {
 		final String name = file.getName();
-		if (name.indexOf('_') < 0 || !file.exists())
-			return false;
-		if (file.isDirectory())
-			return new File(file, "src/main/resources/plugins.config").exists();
+		if (name.indexOf('_') < 0 || !file.exists()) return false;
+		if (file.isDirectory()) return new File(file,
+			"src/main/resources/plugins.config").exists();
 		if (name.endsWith(".jar")) try {
 			final JarFile jar = new JarFile(file);
 			for (JarEntry entry : Collections.list(jar.entries()))
@@ -322,15 +358,16 @@ public class CopyJarsMojo extends AbstractMojo {
 					return true;
 				}
 			jar.close();
-		} catch (Throwable t) {
+		}
+		catch (Throwable t) {
 			// obviously not a plugin...
 		}
 		return false;
 	}
 
 	private final static Pattern versionPattern = Pattern.compile("(.+?)"
-			+ "(-\\d+(\\.\\d+|\\d{7})+[a-z]?\\d?(-[A-Za-z0-9.]+?|\\.GA)*?)?"
-			+ "((-(swing|swt|sources|javadoc))?(\\.jar(-[a-z]*)?))");
+		+ "(-\\d+(\\.\\d+|\\d{7})+[a-z]?\\d?(-[A-Za-z0-9.]+?|\\.GA)*?)?"
+		+ "((-(swing|swt|sources|javadoc))?(\\.jar(-[a-z]*)?))");
 	private final static int PREFIX_INDEX = 1;
 	private final static int SUFFIX_INDEX = 5;
 
@@ -341,7 +378,8 @@ public class CopyJarsMojo extends AbstractMojo {
 		final String prefix = matcher.group(PREFIX_INDEX);
 		final String suffix = matcher.group(SUFFIX_INDEX);
 		final File parent = file.getParentFile();
-		final File directory = parent != null ? parent : file.getAbsoluteFile().getParentFile();
+		final File directory =
+			parent != null ? parent : file.getAbsoluteFile().getParentFile();
 		if (directory == null) return null;
 		final File[] candidates = directory.listFiles(new FilenameFilter() {
 
@@ -349,8 +387,8 @@ public class CopyJarsMojo extends AbstractMojo {
 				if (!name.startsWith(prefix)) return false;
 				final Matcher matcher = versionPattern.matcher(name);
 				return matcher.matches() &&
-						prefix.equals(matcher.group(PREFIX_INDEX)) &&
-						suffix.equals(matcher.group(SUFFIX_INDEX));
+					prefix.equals(matcher.group(PREFIX_INDEX)) &&
+					suffix.equals(matcher.group(SUFFIX_INDEX));
 			}
 		});
 		if (candidates == null || candidates.length == (file.exists() ? 1 : 0)) return null;
