@@ -6,7 +6,8 @@ package imagej.maven;
  * ImageJ software for multidimensional image processing and analysis.
  * %%
  * Copyright (C) 2012 - 2014 Board of Regents of the University of
- * Wisconsin-Madison.
+ * Wisconsin-Madison, Broad Institute of MIT and Harvard, and Max Planck
+ * Institute of Molecular Cell Biology and Genetics.
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
