@@ -8,7 +8,6 @@
 		<version>2.6</version>
 	</parent>
 
-	<groupId>net.imagej</groupId>
 	<artifactId>imagej-maven-plugin</artifactId>
 	<version>0.5.1-SNAPSHOT</version>
 	<packaging>maven-plugin</packaging>
