@@ -16,54 +16,20 @@
 	<description>A plugin helping with installing ImageJ 1.x plugins and dependencies. In ImageJ 1.x, .jar files containing an underscore are automatically scanned for classes whose names contain underscores. Every such class is considered to be a plugin. That is not true, however, for jai_codec.jar's classes. Therefore, Fiji introduced the split between plugins/ and jars/, where third-party libraries are expected to live in jars/. ImageJ2 uses the same structure since it is backwards compatible.</description>
 	<inceptionYear>2012</inceptionYear>
 
-	<properties>
-		<maven.version>2.0</maven.version>
-	</properties>
-
 	<prerequisites>
 		<maven>${maven.version}</maven>
 	</prerequisites>
 
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-invoker-plugin</artifactId>
-				<version>1.8</version>
-				<configuration>
-					<!-- <debug>true</debug> -->
-					<showErrors>true</showErrors>
-					<streamLogs>true</streamLogs>
-					<properties>
-						<imagej-maven.version>${project.version}</imagej-maven.version>
-					</properties>
-					<projectsDirectory>src/it</projectsDirectory>
-					<cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-					<pomIncludes>
-						<pomInclude>*/pom.xml</pomInclude>
-					</pomIncludes>
-					<settingsFile>src/it/settings.xml</settingsFile>
-					<localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
-					<preBuildHookScript>setup.bsh</preBuildHookScript>
-					<postBuildHookScript>verify.bsh</postBuildHookScript>
-					<goals>
-						<goal>install</goal>
-					</goals>
-				</configuration>
-				<executions>
-					<execution>
-						<id>integration-test</id>
-						<goals>
-							<goal>install</goal>
-							<goal>run</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<artifactId>maven-release-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
+	<scm>
+		<connection>scm:git:git://github.com/imagej/imagej-maven-plugin</connection>
+		<developerConnection>scm:git:git@github.com:imagej/imagej-maven-plugin</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/imagej/imagej-maven-plugin</url>
+	</scm>
+
+	<properties>
+		<maven.version>2.0</maven.version>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -108,11 +74,45 @@
 		</dependency>
 	</dependencies>
 
-	<scm>
-		<connection>scm:git:git://github.com/imagej/imagej-maven-plugin</connection>
-		<developerConnection>scm:git:git@github.com:imagej/imagej-maven-plugin</developerConnection>
-		<tag>HEAD</tag>
-		<url>https://github.com/imagej/imagej-maven-plugin</url>
-	</scm>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-invoker-plugin</artifactId>
+				<version>1.8</version>
+				<configuration>
+					<!-- <debug>true</debug> -->
+					<showErrors>true</showErrors>
+					<streamLogs>true</streamLogs>
+					<properties>
+						<imagej-maven.version>${project.version}</imagej-maven.version>
+					</properties>
+					<projectsDirectory>src/it</projectsDirectory>
+					<cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+					<pomIncludes>
+						<pomInclude>*/pom.xml</pomInclude>
+					</pomIncludes>
+					<settingsFile>src/it/settings.xml</settingsFile>
+					<localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+					<preBuildHookScript>setup.bsh</preBuildHookScript>
+					<postBuildHookScript>verify.bsh</postBuildHookScript>
+					<goals>
+						<goal>install</goal>
+					</goals>
+				</configuration>
+				<executions>
+					<execution>
+						<id>integration-test</id>
+						<goals>
+							<goal>install</goal>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-release-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>
