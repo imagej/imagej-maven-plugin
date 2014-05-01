@@ -192,6 +192,9 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		if (imagejDirectoryProperty == null) {
+			imagejDirectoryProperty = System.getProperty("imagejDirectoryProperty");
+		}
+		if (imagejDirectoryProperty == null) {
 			throw new MojoExecutionException(
 				"The 'imagej.app.directory' property is unset!");
 		}
@@ -201,6 +204,9 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 				imagejDirectory);
 		}
 
+		if (deleteOtherVersionsProperty == null) {
+			deleteOtherVersionsProperty = System.getProperty("deleteOtherVersionsProperty");
+		}
 		final boolean deleteOtherVersions =
 			deleteOtherVersionsProperty != null &&
 				deleteOtherVersionsProperty.matches("(?i)true||\\+?[1-9][0-9]*");
