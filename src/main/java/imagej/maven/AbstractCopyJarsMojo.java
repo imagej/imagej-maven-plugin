@@ -137,9 +137,9 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 		final File source = artifact.getFile();
 		final File targetDirectory;
-		if ("loci".equals(artifact.getGroupId()) &&
-			(source.getName().startsWith("scifio-4.4.") || source.getName()
-				.startsWith("jai_imageio-4.4.")))
+		if ("ome".equals(artifact.getGroupId()) ||
+			("loci".equals(artifact.getGroupId()) && (source.getName().startsWith(
+				"scifio-4.4.") || source.getName().startsWith("jai_imageio-4.4."))))
 		{
 			targetDirectory = new File(imagejDirectory, "jars/bio-formats");
 		}
