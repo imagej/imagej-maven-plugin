@@ -29,7 +29,7 @@
  * #L%
  */
 
-package imagej.maven;
+package net.imagej.maven;
 
 import java.io.File;
 import java.util.List;

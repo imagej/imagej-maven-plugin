@@ -1,5 +1,5 @@
 
-package imagej.maven;
+package net.imagej.maven;
 
 /*
  * #%L
