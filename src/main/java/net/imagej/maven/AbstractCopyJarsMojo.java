@@ -203,7 +203,7 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 	private final static Pattern versionPattern = Pattern.compile("(.+?)"
 		+ "(-\\d+(\\.\\d+|\\d{7})+[a-z]?\\d?(-[A-Za-z0-9.]+?|\\.GA)*?)?"
-		+ "((-(swing|swt|sources|javadoc))?(\\.jar(-[a-z]*)?))");
+		+ "((-(swing|swt|sources|javadoc|native))?(\\.jar(-[a-z]*)?))");
 	private final static int PREFIX_INDEX = 1;
 	private final static int SUFFIX_INDEX = 5;
 
