@@ -285,7 +285,8 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 					final String scope = artifact == null ? null : artifact.getScope();
 					if (artifact.isOptional()) continue;
 					if (Artifact.SCOPE_SYSTEM.equals(scope) ||
-						Artifact.SCOPE_PROVIDED.equals(scope)) continue;
+						Artifact.SCOPE_PROVIDED.equals(scope) ||
+						Artifact.SCOPE_TEST.equals(scope)) continue;
 					installArtifact(artifact, imagejDirectory, force,
 						deleteOtherVersions, artifactResolver, remoteRepositoriesList,
 						localRepository);

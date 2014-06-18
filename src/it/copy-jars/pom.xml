@@ -42,7 +42,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>3.8.1</version>
+			<version>4.8.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -70,6 +70,17 @@
 						<goals>
 							<goal>copy-jars</goal>
 						</goals>
+					</execution>
+					<execution>
+						<id>install-artifact</id>
+						<phase>install</phase>
+						<goals>
+							<goal>install-artifact</goal>
+						</goals>
+						<configuration>
+							<imagejDirectoryProperty>${project.basedir}/target/Other.app/</imagejDirectoryProperty>
+							<artifact>${project.groupId}:${project.artifactId}:${project.version}</artifact>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

@@ -37,3 +37,10 @@ assertTrue("Should still exist: " + obsolete, obsolete.exists());
 
 assertLogContains("Possibly incompatible version exists: Example_PlugIn-0.9.0-obsolete.jar");
 
+// install-artifact must not copy test scope dependencies
+junit = new File(ijDir, "../Other.app/jars/junit-4.8.1.jar");
+assertTrue("Should not exist: " + junit, !junit.exists());
+
+// but it must copy the ij dependency
+ij = new File(ijDir, "../Other.app/jars/ij-1.48s.jar");
+assertTrue("ImageJ 1.x was not copied: " + ij, ij.exists());
