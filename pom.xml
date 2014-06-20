@@ -6,6 +6,7 @@
 		<groupId>net.imagej</groupId>
 		<artifactId>pom-imagej</artifactId>
 		<version>2.7</version>
+		<relativePath />
 	</parent>
 
 	<artifactId>imagej-maven-plugin</artifactId>
