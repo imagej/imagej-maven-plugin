@@ -11,7 +11,7 @@ It provides one goal:
   ImageJ 1.x plugins (identified by containing a _plugins.config_ file) get
   copied to the _plugins/_ subdirectory and all other _.jar_ files to _jars/_.
   It expects the location of the _ImageJ.app/_ directory to be specified in the
-  property _imagej.app.location_ (which can be set on the Maven command-line).
+  property _imagej.app.directory_ (which can be set on the Maven command-line).
   If said property is not set, the __copy-jars__ goal is skipped.
 
 It is recommended to use it implicitly by making the
