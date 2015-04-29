@@ -1,3 +1,5 @@
+![](http://jenkins.imagej.net/job/ImageJ-Maven-plugin/lastBuild/badge/icon)
+
 ImageJ Maven Plugin
 ===================
 
