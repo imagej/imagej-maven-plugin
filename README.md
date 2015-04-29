@@ -1,4 +1,4 @@
-![](http://jenkins.imagej.net/job/ImageJ-Maven-plugin/lastBuild/badge/icon)
+[![](http://jenkins.imagej.net/job/ImageJ-Maven-plugin/lastBuild/badge/icon)](http://jenkins.imagej.net/job/ImageJ-Maven-plugin/)
 
 ImageJ Maven Plugin
 ===================
