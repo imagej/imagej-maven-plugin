@@ -206,11 +206,12 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 	private final static Pattern versionPattern = Pattern.compile("(.+?)"
 		+ "(-\\d+(\\.\\d+|\\d{7})+[a-z]?\\d?(-[A-Za-z0-9.]+?|\\.GA)*?)?"
-		+ "((-(swing|swt|sources|javadoc|native))?(\\.jar(-[a-z]*)?))");
+		+ "((-(swing|swt|sources|javadoc|native|linux-x86|linux-x86_64|macosx-x86_64|windows-x86|windows-x86_64|android-arm|android-x86))?(\\.jar(-[a-z]*)?))");
 	private final static int PREFIX_INDEX = 1;
 	private final static int SUFFIX_INDEX = 5;
 
 	private static Collection<File> getEncroachingVersions(final File file) {
+		// TODO reuse FileUtils.stripFilenameVersion logic
 		final Matcher matcher = versionPattern.matcher(file.getName());
 		if (!matcher.matches()) return null;
 
