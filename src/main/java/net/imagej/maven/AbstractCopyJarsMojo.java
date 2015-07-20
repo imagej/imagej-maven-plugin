@@ -137,15 +137,18 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 		final File source = artifact.getFile();
 		final File targetDirectory;
-		if ("ome".equals(artifact.getGroupId()) ||
+
+		if (isIJ1Plugin(source)) {
+			targetDirectory = new File(imagejDirectory, "plugins");
+		}
+		else if ("ome".equals(artifact.getGroupId()) ||
 			("loci".equals(artifact.getGroupId()) && (source.getName().startsWith(
 				"scifio-4.4.") || source.getName().startsWith("jai_imageio-4.4."))))
 		{
 			targetDirectory = new File(imagejDirectory, "jars/bio-formats");
 		}
 		else {
-			targetDirectory =
-				new File(imagejDirectory, isIJ1Plugin(source) ? "plugins" : "jars");
+			targetDirectory = new File(imagejDirectory, "jars");
 		}
 		final String fileName =
 			"Fiji_Updater".equals(artifact.getArtifactId()) ? artifact
