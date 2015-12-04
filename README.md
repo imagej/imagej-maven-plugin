@@ -1,3 +1,4 @@
+[![](https://img.shields.io/maven-central/v/net.imagej/imagej-maven-plugin.svg)](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.imagej%22%20AND%20a%3A%22imagej-maven-plugin%22)
 [![](http://jenkins.imagej.net/job/ImageJ-Maven-plugin/lastBuild/badge/icon)](http://jenkins.imagej.net/job/ImageJ-Maven-plugin/)
 
 ImageJ Maven Plugin
