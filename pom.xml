@@ -3,19 +3,31 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>net.imagej</groupId>
-		<artifactId>pom-imagej</artifactId>
-		<version>10.0.1</version>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>12.0.0</version>
 		<relativePath />
 	</parent>
 
+	<groupId>net.imagej</groupId>
 	<artifactId>imagej-maven-plugin</artifactId>
 	<version>0.6.1-SNAPSHOT</version>
 	<packaging>maven-plugin</packaging>
 
 	<name>ImageJ Maven plugin</name>
 	<description>A plugin helping with installing ImageJ 1.x plugins and dependencies. In ImageJ 1.x, .jar files containing an underscore are automatically scanned for classes whose names contain underscores. Every such class is considered to be a plugin. That is not true, however, for jai_codec.jar's classes. Therefore, Fiji introduced the split between plugins/ and jars/, where third-party libraries are expected to live in jars/. ImageJ2 uses the same structure since it is backwards compatible.</description>
+	<url>http://imagej.net/ImageJ_Maven_plugin</url>
 	<inceptionYear>2012</inceptionYear>
+	<organization>
+		<name>ImageJ</name>
+		<url>http://imagej.net/</url>
+	</organization>
+	<licenses>
+		<license>
+			<name>Simplified BSD License</name>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<developers>
 		<developer>
@@ -46,6 +58,13 @@
 		</contributor>
 	</contributors>
 
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>http://forum.imagej.net/</archive>
+		</mailingList>
+	</mailingLists>
+
 	<scm>
 		<connection>scm:git:git://github.com/imagej/imagej-maven-plugin</connection>
 		<developerConnection>scm:git:git@github.com:imagej/imagej-maven-plugin</developerConnection>
@@ -62,6 +81,12 @@
 	</ciManagement>
 
 	<properties>
+		<package-name>net.imagej.maven</package-name>
+		<license.licenseName>bsd_2</license.licenseName>
+		<license.copyrightOwners>Board of Regents of the University of
+Wisconsin-Madison, Broad Institute of MIT and Harvard, and Max Planck
+Institute of Molecular Cell Biology and Genetics.</license.copyrightOwners>
+		<license.projectName>ImageJ software for multidimensional image processing and analysis.</license.projectName>
 		<maven.version>2.0</maven.version>
 	</properties>
 
