@@ -17,10 +17,6 @@
 	<description>A plugin helping with installing ImageJ 1.x plugins and dependencies. In ImageJ 1.x, .jar files containing an underscore are automatically scanned for classes whose names contain underscores. Every such class is considered to be a plugin. That is not true, however, for jai_codec.jar's classes. Therefore, Fiji introduced the split between plugins/ and jars/, where third-party libraries are expected to live in jars/. ImageJ2 uses the same structure since it is backwards compatible.</description>
 	<inceptionYear>2012</inceptionYear>
 
-	<prerequisites>
-		<maven>${maven.version}</maven>
-	</prerequisites>
-
 	<scm>
 		<connection>scm:git:git://github.com/imagej/imagej-maven-plugin</connection>
 		<developerConnection>scm:git:git@github.com:imagej/imagej-maven-plugin</developerConnection>
