@@ -55,8 +55,6 @@ import org.apache.maven.shared.dependency.tree.traversal.CollectingDependencyNod
  * structure.
  * 
  * @author Johannes Schindelin
- * @goal copy-jars
- * @phase install
  */
 public class CopyJarsMojo extends AbstractCopyJarsMojo {
 
@@ -83,75 +81,36 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 */
 	private boolean deleteOtherVersions;
 
-	/**
-	 * @parameter property="project"
-	 * @required
-	 * @readonly
-	 */
 	private MavenProject project;
 
 	/**
 	 * Session
-	 * 
-	 * @parameter property="session"
 	 */
 	private MavenSession session;
 
 	/**
 	 * List of Remote Repositories used by the resolver
-	 * 
-	 * @parameter property="project.remoteArtifactRepositories"
-	 * @readonly
-	 * @required
 	 */
 	protected List<ArtifactRepository> remoteRepositories;
 
 	/**
 	 * Location of the local repository.
-	 * 
-	 * @parameter property="localRepository"
-	 * @readonly
-	 * @required
 	 */
 	protected ArtifactRepository localRepository;
 
-	/**
-	 * @component role="org.apache.maven.artifact.metadata.ArtifactMetadataSource"
-	 *            hint="maven"
-	 * @required
-	 * @readonly
-	 */
 	private ArtifactMetadataSource artifactMetadataSource;
 
-	/**
-	 * @component role="org.apache.maven.artifact.resolver.ArtifactCollector"
-	 * @required
-	 * @readonly
-	 */
 	private ArtifactCollector artifactCollector;
 
-	/**
-	 * @component
-	 * @required
-	 * @readonly
-	 */
 	private DependencyTreeBuilder treeBuilder;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
-	 * 
-	 * @component
-	 * @required
-	 * @readonly
 	 */
 	protected ArtifactFactory artifactFactory;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
-	 * 
-	 * @component
-	 * @required
-	 * @readonly
 	 */
 	protected ArtifactResolver artifactResolver;
 

@@ -57,8 +57,6 @@ import org.apache.maven.plugin.MojoFailureException;
  * structure.
  * 
  * @author Johannes Schindelin
- * @requiresProject false
- * @goal install-artifact
  */
 public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 
