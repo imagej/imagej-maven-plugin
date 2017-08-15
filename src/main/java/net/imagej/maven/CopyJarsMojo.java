@@ -70,6 +70,16 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	private String imagejDirectoryProperty;
 
 	/**
+	 * The name of the property pointing to the subdirectory where the Jar should be copied to.
+	 * <p>
+	 * If no property of that name exists, it is simply taken as being the empty string .
+	 * </p>
+	 * 
+	 * @parameter property="jar.subdirectory"
+	 */	
+	private String imageJSubDirectoryProperty;
+	
+	/**
 	 * Whether to delete other versions when copying the files.
 	 * <p>
 	 * When copying a file and its dependencies to an ImageJ.app/ directory and
@@ -133,7 +143,18 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 			return;
 		}
 		final String interpolated = interpolate(path, project, session);
-		imagejDirectory = new File(interpolated);
+		
+		if (imageJSubDirectoryProperty == null) {
+			getLog()
+			.info(
+				"No property name for the jars.subdirectory/ directory location was specified; Installing in default location");
+		}
+		String subpath = System.getProperty(imageJSubDirectoryProperty);
+		if (subpath == null) subpath = project.getProperties().getProperty(imageJSubDirectoryProperty);
+		if (subpath == null) { subpath = ""; }
+		
+		imagejDirectory = new File(interpolated,subpath);
+		
 		if (!imagejDirectory.isDirectory()) {
 			getLog().warn(
 				"'" + imagejDirectory + "'" +
@@ -141,7 +162,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 					" is not an ImageJ.app/ directory; Skipping copy-jars");
 			return;
 		}
-
+		
 		try {
 			ArtifactFilter artifactFilter =
 				new ScopeArtifactFilter(Artifact.SCOPE_COMPILE);
