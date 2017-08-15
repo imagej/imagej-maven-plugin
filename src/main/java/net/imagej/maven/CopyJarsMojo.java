@@ -69,6 +69,16 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	private String imagejDirectory;
 
 	/**
+	 * The name of the property pointing to the subdirectory (beneath e.g.
+	 * {@code jars/} or {@code plugins/}) to which the artifact should be copied.
+	 * <p>
+	 * If no property of that name exists, no subdirectory will be used.
+	 * </p>
+	 */
+	@Parameter(property = imagejSubdirectoryProperty, required = false)
+	private String imagejSubdirectory;
+
+	/**
 	 * Whether to delete other versions when copying the files.
 	 * <p>
 	 * When copying a file and its dependencies to an ImageJ.app/ directory and
@@ -110,6 +120,12 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 		}
 		final String interpolated = interpolate(imagejDirectory, project, session);
 		imagejDir = new File(interpolated);
+
+		if (imagejSubdirectory == null) {
+			getLog().info("No property name for the " + imagejSubdirectoryProperty +
+				" directory location was specified; Installing in default location");
+		}
+
 		if (!imagejDir.isDirectory()) {
 			getLog().warn(
 				"'" + imagejDirectory + "'" +
@@ -133,6 +149,11 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 					.resolveDependencies(buildingRequest, coordinate, scopeFilter);
 				for (ArtifactResult result : resolveDependencies) {
 					try {
+						if (project.getArtifact().equals(result.getArtifact())) {
+							installArtifact(result.getArtifact(), imagejDir, imagejSubdirectory, false,
+								deleteOtherVersions);
+							continue;
+						}
 						installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions);
 					}
 					catch (IOException e) {

@@ -67,6 +67,7 @@ import org.codehaus.plexus.util.FileUtils;
 public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 	public static final String imagejDirectoryProperty = "imagej.app.directory";
+	public static final String imagejSubdirectoryProperty = "imagej.app.subdirectory";
 	public static final String deleteOtherVersionsProperty = "delete.other.versions";
 
 	protected boolean hasIJ1Dependency(final MavenProject project) {
@@ -126,12 +127,21 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 		final File imagejDirectory, final boolean force,
 		final boolean deleteOtherVersions) throws IOException
 	{
+		installArtifact(artifact, imagejDirectory, "", force, deleteOtherVersions);
+	}
+
+	protected void installArtifact(final Artifact artifact,
+		final File imagejDirectory, final String subdirectory, final boolean force,
+		final boolean deleteOtherVersions) throws IOException
+	{
 		if (!"jar".equals(artifact.getType())) return;
 
 		final File source = artifact.getFile();
 		final File targetDirectory;
 
-		if (isIJ1Plugin(source)) {
+		if (subdirectory != null && !subdirectory.equals("")) {
+			targetDirectory = new File(imagejDirectory, subdirectory);
+		} else if (isIJ1Plugin(source)) {
 			targetDirectory = new File(imagejDirectory, "plugins");
 		}
 		else if ("ome".equals(artifact.getGroupId()) ||
