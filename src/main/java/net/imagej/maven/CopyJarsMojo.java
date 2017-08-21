@@ -44,6 +44,9 @@ import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.dependency.tree.DependencyNode;
 import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
@@ -56,6 +59,7 @@ import org.apache.maven.shared.dependency.tree.traversal.CollectingDependencyNod
  * 
  * @author Johannes Schindelin
  */
+@Mojo(name = "copy-jars", requiresProject = true, requiresOnline = true)
 public class CopyJarsMojo extends AbstractCopyJarsMojo {
 
 	/**
@@ -67,6 +71,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter default-value="imagej.app.directory"
 	 */
+	@Parameter(defaultValue="imagej.app.directory")
 	private String imagejDirectoryProperty;
 
 	/**
@@ -79,49 +84,57 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter default-value="false" property="delete.other.versions"
 	 */
+	@Parameter(property="delete.other.versions")
 	private boolean deleteOtherVersions;
 
+	@Parameter(defaultValue = "${project}", required=true, readonly = true)
 	private MavenProject project;
 
 	/**
 	 * Session
 	 */
+	@Parameter(defaultValue = "${session}")
 	private MavenSession session;
 
 	/**
 	 * List of Remote Repositories used by the resolver
 	 */
+	@Parameter(property="remoteRepositories", readonly = true)
 	protected List<ArtifactRepository> remoteRepositories;
 
 	/**
 	 * Location of the local repository.
 	 */
+	@Parameter(property="localRepository", readonly = true)
 	protected ArtifactRepository localRepository;
 
+	@Component
 	private ArtifactMetadataSource artifactMetadataSource;
 
+	@Component
 	private ArtifactCollector artifactCollector;
 
+	@Component
 	private DependencyTreeBuilder treeBuilder;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
 	 */
+	@Component
 	protected ArtifactFactory artifactFactory;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
 	 */
+	@Component
 	protected ArtifactResolver artifactResolver;
 
 	private File imagejDirectory;
 
-	@SuppressWarnings("unchecked")
+	@Override
 	public void execute() throws MojoExecutionException {
 		if (imagejDirectoryProperty == null) {
-			getLog()
-				.info(
-					"No property name for the ImageJ.app/ directory location was specified; Skipping");
+			getLog().info("No property name for the ImageJ.app/ directory location was specified; Skipping");
 			return;
 		}
 		String path = System.getProperty(imagejDirectoryProperty);

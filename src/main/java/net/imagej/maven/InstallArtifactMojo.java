@@ -51,6 +51,9 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * Downloads .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -58,6 +61,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * 
  * @author Johannes Schindelin
  */
+@Mojo(name = "install-artifact", requiresProject = true, requiresOnline = true)
 public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 
 	/**
@@ -70,6 +74,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * @parameter property="imagej.app.directory"
 	 * @required
 	 */
+	@Parameter(property="imagej.app.directory")
 	private String imagejDirectoryProperty;
 
 	/**
@@ -82,6 +87,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter property="delete.other.versions"
 	 */
+	@Parameter(property="delete.other.versions")
 	private String deleteOtherVersionsProperty;
 
 	/**
@@ -95,6 +101,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * @parameter property="remoteRepositories"
 	 * @readonly
 	 */
+	@Parameter(property="remoteRepositories", readonly = true)
 	private String remoteRepositories;
 
 	/**
@@ -103,6 +110,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * @parameter property="localRepository"
 	 * @readonly
 	 */
+	@Parameter(property="localRepository", readonly = true)
 	private ArtifactRepository localRepository;
 
 	/**
@@ -112,6 +120,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * @required
 	 * @readonly
 	 */
+	@Component
 	private ArtifactFactory artifactFactory;
 
 	/**
@@ -121,12 +130,14 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * @required
 	 * @readonly
 	 */
+	@Component
 	private ArtifactResolver artifactResolver;
 
 	/**
 	 * @component
 	 * @readonly
 	 */
+	@Component
 	private ArtifactRepositoryFactory artifactRepositoryFactory;
 
 	/**
@@ -135,12 +146,14 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * @component role=
 	 *            "org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout"
 	 */
+	@Component(role = ArtifactRepositoryLayout.class)
 	private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
 
 	/**
 	 * @component
 	 * @readonly
 	 */
+	@Component
 	private ArtifactMetadataSource source;
 
 	/**
@@ -149,6 +162,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter property="groupId"
 	 */
+	@Parameter(property = "groupId")
 	private String groupId;
 
 	/**
@@ -157,6 +171,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter property="artifactId"
 	 */
+	@Parameter(property="artifactId")
 	private String artifactId;
 
 	/**
@@ -165,6 +180,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter property="version"
 	 */
+	@Parameter(property="version")
 	private String version;
 
 	/**
@@ -172,6 +188,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter property="artifact"
 	 */
+	@Parameter(property = "artifact")
 	private String artifact;
 
 	/**
@@ -179,6 +196,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * 
 	 * @parameter property="force"
 	 */
+	@Parameter(property = "force")
 	private boolean force;
 
 	/**
@@ -186,6 +204,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * @required
 	 * @readonly
 	 */
+	@Parameter(defaultValue = "${project.remoteRepositories}", required=true, readonly=true)
 	private List<ArtifactRepository> projectRemoteRepositories;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
