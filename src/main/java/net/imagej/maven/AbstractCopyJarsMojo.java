@@ -1,6 +1,3 @@
-
-package net.imagej.maven;
-
 /*
  * #%L
  * ImageJ software for multidimensional image processing and analysis.
@@ -31,6 +28,8 @@ package net.imagej.maven;
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
+
+package net.imagej.maven;
 
 import java.io.File;
 import java.io.FilenameFilter;
