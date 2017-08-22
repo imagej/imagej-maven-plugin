@@ -68,8 +68,6 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * If no property of that name exists, or if it is not a directory, no .jar
 	 * files are copied.
 	 * </p>
-	 * 
-	 * @parameter default-value="imagej.app.directory"
 	 */
 	@Parameter(defaultValue="imagej.app.directory")
 	private String imagejDirectoryProperty;
@@ -81,8 +79,6 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * there are other versions of the same file, we can warn or delete those
 	 * other versions.
 	 * </p>
-	 * 
-	 * @parameter default-value="false" property="delete.other.versions"
 	 */
 	@Parameter(property="delete.other.versions")
 	private boolean deleteOtherVersions;

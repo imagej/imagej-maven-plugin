@@ -70,9 +70,6 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * If no property of that name exists, or if it is not a directory, no .jar
 	 * files are copied.
 	 * </p>
-	 * 
-	 * @parameter property="imagej.app.directory"
-	 * @required
 	 */
 	@Parameter(property="imagej.app.directory")
 	private String imagejDirectoryProperty;
@@ -84,8 +81,6 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * there are other versions of the same file, we can warn or delete those
 	 * other versions.
 	 * </p>
-	 * 
-	 * @parameter property="delete.other.versions"
 	 */
 	@Parameter(property="delete.other.versions")
 	private String deleteOtherVersionsProperty;
@@ -97,70 +92,43 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * {@code -DremoteRepositories=imagej::default::http://maven.imagej.net/content/groups/public}
 	 * .
 	 * </p>
-	 * 
-	 * @parameter property="remoteRepositories"
-	 * @readonly
 	 */
 	@Parameter(property="remoteRepositories", readonly = true)
 	private String remoteRepositories;
 
 	/**
 	 * Location of the local repository.
-	 * 
-	 * @parameter property="localRepository"
-	 * @readonly
 	 */
 	@Parameter(property="localRepository", readonly = true)
 	private ArtifactRepository localRepository;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
-	 * 
-	 * @component
-	 * @required
-	 * @readonly
 	 */
 	@Component
 	private ArtifactFactory artifactFactory;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
-	 * 
-	 * @component
-	 * @required
-	 * @readonly
 	 */
 	@Component
 	private ArtifactResolver artifactResolver;
 
-	/**
-	 * @component
-	 * @readonly
-	 */
 	@Component
 	private ArtifactRepositoryFactory artifactRepositoryFactory;
 
 	/**
 	 * Map that contains the layouts.
-	 * 
-	 * @component role=
-	 *            "org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout"
 	 */
 	@Component(role = ArtifactRepositoryLayout.class)
 	private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
 
-	/**
-	 * @component
-	 * @readonly
-	 */
 	@Component
 	private ArtifactMetadataSource source;
 
 	/**
 	 * The groupId of the artifact to download. Ignored if {@link #artifact} is
 	 * used.
-	 * 
-	 * @parameter property="groupId"
 	 */
 	@Parameter(property = "groupId")
 	private String groupId;
@@ -168,8 +136,6 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	/**
 	 * The artifactId of the artifact to download. Ignored if {@link #artifact} is
 	 * used.
-	 * 
-	 * @parameter property="artifactId"
 	 */
 	@Parameter(property="artifactId")
 	private String artifactId;
@@ -177,33 +143,22 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	/**
 	 * The version of the artifact to download. Ignored if {@link #artifact} is
 	 * used.
-	 * 
-	 * @parameter property="version"
 	 */
 	@Parameter(property="version")
 	private String version;
 
 	/**
 	 * A string of the form groupId:artifactId:version[:packaging][:classifier].
-	 * 
-	 * @parameter property="artifact"
 	 */
 	@Parameter(property = "artifact")
 	private String artifact;
 
 	/**
 	 * Whether to force overwriting files.
-	 * 
-	 * @parameter property="force"
 	 */
 	@Parameter(property = "force")
 	private boolean force;
 
-	/**
-	 * @parameter property="project.remoteArtifactRepositories"
-	 * @required
-	 * @readonly
-	 */
 	@Parameter(defaultValue = "${project.remoteRepositories}", required=true, readonly=true)
 	private List<ArtifactRepository> projectRemoteRepositories;
 
