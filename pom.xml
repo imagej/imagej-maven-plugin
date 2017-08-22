@@ -88,16 +88,16 @@ Wisconsin-Madison, Broad Institute of MIT and Harvard, and Max Planck
 Institute of Molecular Cell Biology and Genetics.</license.copyrightOwners>
 		<license.projectName>ImageJ software for multidimensional image processing and analysis.</license.projectName>
 		<scijava.jvm.version>1.6</scijava.jvm.version>
-		<maven.version>2.0</maven.version>
-		<maven2.version>2.2.1</maven2.version>
+		<maven.version>2.2.1</maven.version>
 		<maven-tree.version>2.2</maven-tree.version>
+		<maven-annotations.version>3.5</maven-annotations.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.maven</groupId>
 			<artifactId>maven-artifact</artifactId>
-			<version>${maven2.version}</version>
+			<version>${maven.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.codehaus.plexus</groupId>
@@ -108,7 +108,7 @@ Institute of Molecular Cell Biology and Genetics.</license.copyrightOwners>
 		<dependency>
 			<groupId>org.apache.maven</groupId>
 			<artifactId>maven-project</artifactId>
-			<version>${maven2.version}</version>
+			<version>${maven.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.codehaus.plexus</groupId>
@@ -160,6 +160,10 @@ Institute of Molecular Cell Biology and Genetics.</license.copyrightOwners>
 					<groupId>org.codehaus.plexus</groupId>
 					<artifactId>plexus-utils</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.apache.maven.wagon</groupId>
+					<artifactId>wagon-webdav-jackrabbit</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -170,23 +174,12 @@ Institute of Molecular Cell Biology and Genetics.</license.copyrightOwners>
 		<dependency>
 			<groupId>org.apache.maven.plugin-tools</groupId>
 			<artifactId>maven-plugin-annotations</artifactId>
-			<version>3.3</version>
+			<version>${maven-annotations.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
-
 		<dependency>
 			<groupId>org.apache.maven</groupId>
 			<artifactId>maven-model</artifactId>
-			<version>${maven2.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.maven</groupId>
-			<artifactId>maven-project</artifactId>
-			<version>${maven2.version}</version>
+			<version>${maven.version}</version>
 		</dependency>
 
 		<dependency>
