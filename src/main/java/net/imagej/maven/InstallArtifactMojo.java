@@ -34,26 +34,29 @@ package net.imagej.maven;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.apache.maven.artifact.resolver.AbstractArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.artifact.resolve.ArtifactResult;
+import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
+import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
 
 /**
  * Downloads .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -123,8 +126,8 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	@Component(role = ArtifactRepositoryLayout.class)
 	private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
 
-	@Component
-	private ArtifactMetadataSource source;
+	@Parameter( defaultValue = "${session}", required = true, readonly = true )
+	private MavenSession session;
 
 	/**
 	 * The groupId of the artifact to download. Ignored if {@link #artifact} is
@@ -148,16 +151,37 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	private String version;
 
 	/**
+	 * The packaging of the artifact to download. Ignored if {@link #artifact} is
+	 * used.
+	 */
+	@Parameter(property = "packaging", defaultValue = "jar")
+	private String packaging = "jar";
+
+	/**
 	 * A string of the form groupId:artifactId:version[:packaging][:classifier].
 	 */
 	@Parameter(property = "artifact")
 	private String artifact;
 
 	/**
+	 * The dependency tree builder to use.
+	 */
+	@Component(hint = "default")
+	private DependencyGraphBuilder dependencyGraphBuilder;
+
+	/**
+	 * The dependency resolver to.
+	 */
+	@Component
+	private DependencyResolver dependencyResolver;
+
+	/**
 	 * Whether to force overwriting files.
 	 */
 	@Parameter(property = "force")
 	private boolean force;
+
+	private DefaultDependableCoordinate coordinate = new DefaultDependableCoordinate();
 
 	@Parameter(defaultValue = "${project.remoteRepositories}", required=true, readonly=true)
 	private List<ArtifactRepository> projectRemoteRepositories;
@@ -183,6 +207,9 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 			deleteOtherVersionsProperty != null &&
 				deleteOtherVersionsProperty.matches("(?i)true||\\+?[1-9][0-9]*");
 
+		/*
+		 * Determine GAV to download
+		 */
 		if (artifactId == null && artifact == null) {
 			throw new MojoFailureException(
 				"No artifact specified (e.g. by -Dartifact=net.imagej:ij:1.48p)");
@@ -197,13 +224,22 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 			groupId = tokens[0];
 			artifactId = tokens[1];
 			version = tokens[2];
+
+			coordinate.setGroupId(groupId);
+			coordinate.setArtifactId(artifactId);
+			coordinate.setVersion(version);
+
+			if (tokens.length >= 4) {
+				coordinate.setType(tokens[3]);
+			}
+			if (tokens.length == 5) {
+				coordinate.setClassifier(tokens[4]);
+			}
 		}
 
-		final Artifact toDownload =
-			artifactFactory.createBuildArtifact(groupId, artifactId, version, "jar");
-		final Artifact pomToDownload =
-			artifactFactory.createBuildArtifact(groupId, artifactId, version, "pom");
-
+		/*
+		 * Setup repositories to query
+		 */
 		final ArtifactRepositoryLayout layout =
 			(ArtifactRepositoryLayout) repositoryLayouts.get("default");
 
@@ -244,33 +280,34 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 			}
 		}
 
+		/*
+		 * Install artifact
+		 */
 		try {
-			final Set<Artifact> set = new HashSet<Artifact>();
-			set.add(toDownload);
-			final ArtifactResolutionResult result =
-				artifactResolver.resolveTransitively(set, pomToDownload,
-					remoteRepositoriesList, localRepository, source);
-			@SuppressWarnings("unchecked")
-			final Set<Artifact> artifacts = (Set<Artifact>) result.getArtifacts();
-			for (final Artifact artifact : artifacts)
+			ProjectBuildingRequest buildingRequest =
+				new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+			buildingRequest.setRemoteRepositories(remoteRepositoriesList);
+
+			Iterable<ArtifactResult> resolveDependencies = dependencyResolver
+				.resolveDependencies(buildingRequest, coordinate, null);
+			for (ArtifactResult result : resolveDependencies) {
 				try {
-					final String scope = artifact == null ? null : artifact.getScope();
-					if (artifact.isOptional()) continue;
-					if (Artifact.SCOPE_SYSTEM.equals(scope) ||
-						Artifact.SCOPE_PROVIDED.equals(scope) ||
-						Artifact.SCOPE_TEST.equals(scope)) continue;
-					installArtifact(artifact, imagejDirectory, force,
-						deleteOtherVersions, artifactResolver, remoteRepositoriesList,
-						localRepository);
+					installArtifact(result.getArtifact(), imagejDirectory, false, deleteOtherVersions,
+						artifactResolver, remoteRepositoriesList, localRepository);
 				}
 				catch (IOException e) {
 					throw new MojoExecutionException("Couldn't download artifact " +
 						artifact + ": " + e.getMessage(), e);
 				}
+			}
 		}
 		catch (AbstractArtifactResolutionException e) {
-			throw new MojoExecutionException("Couldn't download artifact: " +
-				e.getMessage(), e);
+			throw new MojoExecutionException("Couldn't download artifact: " + e
+				.getMessage(), e);
+		}
+		catch (DependencyResolverException e) {
+			throw new MojoExecutionException(
+				"Couldn't resolve dependencies for artifact: " + e.getMessage(), e);
 		}
 	}
 }

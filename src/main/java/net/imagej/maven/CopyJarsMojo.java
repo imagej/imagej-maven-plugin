@@ -35,10 +35,7 @@ import java.io.File;
 import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.factory.ArtifactFactory;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
@@ -47,11 +44,13 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.dependency.tree.DependencyNode;
-import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
-import org.apache.maven.shared.dependency.tree.DependencyTreeBuilderException;
-import org.apache.maven.shared.dependency.tree.traversal.CollectingDependencyNodeVisitor;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
+import org.apache.maven.shared.dependency.graph.DependencyGraphBuilderException;
+import org.apache.maven.shared.dependency.graph.DependencyNode;
+import org.apache.maven.shared.dependency.graph.traversal.CollectingDependencyNodeVisitor;
 
 /**
  * Copies .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -83,6 +82,9 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	@Parameter(property="delete.other.versions")
 	private boolean deleteOtherVersions;
 
+	/**
+	 * Project
+	 */
 	@Parameter(defaultValue = "${project}", required=true, readonly = true)
 	private MavenProject project;
 
@@ -105,19 +107,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	protected ArtifactRepository localRepository;
 
 	@Component
-	private ArtifactMetadataSource artifactMetadataSource;
-
-	@Component
-	private ArtifactCollector artifactCollector;
-
-	@Component
-	private DependencyTreeBuilder treeBuilder;
-
-	/**
-	 * Used to look up Artifacts in the remote repository.
-	 */
-	@Component
-	protected ArtifactFactory artifactFactory;
+	private DependencyGraphBuilder treeBuilder;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
@@ -154,36 +144,34 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 		try {
 			ArtifactFilter artifactFilter =
 				new ScopeArtifactFilter(Artifact.SCOPE_COMPILE);
+
+			ProjectBuildingRequest request = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+			request.setProject( project );
 			DependencyNode rootNode =
-				treeBuilder.buildDependencyTree(project, localRepository,
-					artifactFactory, artifactMetadataSource, artifactFilter,
-					artifactCollector);
+				treeBuilder.buildDependencyGraph(request, artifactFilter);
 
 			CollectingDependencyNodeVisitor visitor =
 				new CollectingDependencyNodeVisitor();
 			rootNode.accept(visitor);
 
-			for (final DependencyNode dependencyNode : (List<DependencyNode>) visitor
-				.getNodes())
+			for (final DependencyNode dependencyNode : visitor.getNodes())
 			{
-				if (dependencyNode.getState() == DependencyNode.INCLUDED) {
-					final Artifact artifact = dependencyNode.getArtifact();
-					final String scope = artifact.getScope();
-					if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) &&
-						!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
-					try {
-						installArtifact(artifact, imagejDirectory, false,
-							deleteOtherVersions, artifactResolver, remoteRepositories,
-							localRepository);
-					}
-					catch (Exception e) {
-						throw new MojoExecutionException("Could not copy " + artifact +
-							" to " + imagejDirectory, e);
-					}
+				final Artifact artifact = dependencyNode.getArtifact();
+				final String scope = artifact.getScope();
+				if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) &&
+					!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
+				try {
+					installArtifact(artifact, imagejDirectory, false,
+						deleteOtherVersions, artifactResolver, remoteRepositories,
+						localRepository);
+				}
+				catch (Exception e) {
+					throw new MojoExecutionException("Could not copy " + artifact +
+						" to " + imagejDirectory, e);
 				}
 			}
 		}
-		catch (DependencyTreeBuilderException e) {
+		catch (DependencyGraphBuilderException e) {
 			throw new MojoExecutionException("Could not get the dependencies for " +
 				project.getArtifactId(), e);
 		}
