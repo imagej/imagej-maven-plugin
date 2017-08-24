@@ -78,7 +78,7 @@
 							<goal>install-artifact</goal>
 						</goals>
 						<configuration>
-							<imagejDirectoryProperty>${project.basedir}/target/Other.app/</imagejDirectoryProperty>
+							<imagejDirectory>${project.basedir}/target/Other.app/</imagejDirectory>
 							<artifact>${project.groupId}:${project.artifactId}:${project.version}</artifact>
 						</configuration>
 					</execution>

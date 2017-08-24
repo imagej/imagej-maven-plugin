@@ -70,6 +70,9 @@ import org.codehaus.plexus.util.FileUtils;
  */
 public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
+	public static final String imagejDirectoryProperty = "imagej.app.directory";
+	public static final String deleteOtherVersionsProperty = "delete.other.versions";
+
 	protected boolean hasIJ1Dependency(final MavenProject project) {
 		@SuppressWarnings("unchecked")
 		final List<Dependency> dependencies = project.getDependencies();

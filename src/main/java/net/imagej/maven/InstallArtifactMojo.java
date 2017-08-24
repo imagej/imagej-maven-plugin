@@ -74,8 +74,8 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * files are copied.
 	 * </p>
 	 */
-	@Parameter(property="imagej.app.directory")
-	private String imagejDirectoryProperty;
+	@Parameter(property = imagejDirectoryProperty)
+	private String imagejDirectory;
 
 	/**
 	 * Whether to delete other versions when copying the files.
@@ -85,8 +85,8 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 */
-	@Parameter(property="delete.other.versions")
-	private String deleteOtherVersionsProperty;
+	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "false")
+	private boolean deleteOtherVersions;
 
 	/**
 	 * Comma-separated list of Remote Repositories used by the resolver
@@ -187,25 +187,15 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	private List<ArtifactRepository> projectRemoteRepositories;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		if (imagejDirectoryProperty == null) {
-			imagejDirectoryProperty = System.getProperty("imagejDirectoryProperty");
-		}
-		if (imagejDirectoryProperty == null) {
+		if (imagejDirectory == null) {
 			throw new MojoExecutionException(
-				"The 'imagej.app.directory' property is unset!");
+				"The '"+imagejDirectoryProperty+"' property is unset!");
 		}
-		File imagejDirectory = new File(imagejDirectoryProperty);
-		if (!imagejDirectory.isDirectory() && !imagejDirectory.mkdirs()) {
+		File imagejDir = new File(imagejDirectory);
+		if (!imagejDir.isDirectory() && !imagejDir.mkdirs()) {
 			throw new MojoFailureException("Could not make directory: " +
-				imagejDirectory);
+				imagejDir);
 		}
-
-		if (deleteOtherVersionsProperty == null) {
-			deleteOtherVersionsProperty = System.getProperty("deleteOtherVersionsProperty");
-		}
-		final boolean deleteOtherVersions =
-			deleteOtherVersionsProperty != null &&
-				deleteOtherVersionsProperty.matches("(?i)true||\\+?[1-9][0-9]*");
 
 		/*
 		 * Determine GAV to download
@@ -292,7 +282,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 				.resolveDependencies(buildingRequest, coordinate, null);
 			for (ArtifactResult result : resolveDependencies) {
 				try {
-					installArtifact(result.getArtifact(), imagejDirectory, false, deleteOtherVersions,
+					installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions,
 						artifactResolver, remoteRepositoriesList, localRepository);
 				}
 				catch (IOException e) {

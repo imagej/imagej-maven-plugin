@@ -68,8 +68,8 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * files are copied.
 	 * </p>
 	 */
-	@Parameter(defaultValue="imagej.app.directory")
-	private String imagejDirectoryProperty;
+	@Parameter(property = imagejDirectoryProperty, required = false)
+	private String imagejDirectory;
 
 	/**
 	 * Whether to delete other versions when copying the files.
@@ -79,7 +79,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 */
-	@Parameter(property="delete.other.versions")
+	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "false")
 	private boolean deleteOtherVersions;
 
 	/**
@@ -115,28 +115,21 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	@Component
 	protected ArtifactResolver artifactResolver;
 
-	private File imagejDirectory;
+	private File imagejDir;
 
 	@Override
 	public void execute() throws MojoExecutionException {
-		if (imagejDirectoryProperty == null) {
-			getLog().info("No property name for the ImageJ.app/ directory location was specified; Skipping");
-			return;
-		}
-		String path = System.getProperty(imagejDirectoryProperty);
-		if (path == null) path =
-			project.getProperties().getProperty(imagejDirectoryProperty);
-		if (path == null) {
+		if (imagejDirectory == null) {
 			if (hasIJ1Dependency(project)) getLog().info(
 				"Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
 			return;
 		}
-		final String interpolated = interpolate(path, project, session);
-		imagejDirectory = new File(interpolated);
-		if (!imagejDirectory.isDirectory()) {
+		final String interpolated = interpolate(imagejDirectory, project, session);
+		imagejDir = new File(interpolated);
+		if (!imagejDir.isDirectory()) {
 			getLog().warn(
 				"'" + imagejDirectory + "'" +
-					(interpolated.equals(path) ? "" : " (" + path + ")") +
+					(interpolated.equals(imagejDirectory) ? "" : " (" + imagejDirectory + ")") +
 					" is not an ImageJ.app/ directory; Skipping copy-jars");
 			return;
 		}
@@ -161,7 +154,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 				if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) &&
 					!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
 				try {
-					installArtifact(artifact, imagejDirectory, false,
+					installArtifact(artifact, imagejDir, false,
 						deleteOtherVersions, artifactResolver, remoteRepositories,
 						localRepository);
 				}
