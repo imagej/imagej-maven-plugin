@@ -32,10 +32,8 @@
 package net.imagej.maven;
 
 import java.io.File;
+import java.io.IOException;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -44,10 +42,12 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
-import org.apache.maven.shared.dependency.graph.DependencyGraphBuilderException;
-import org.apache.maven.shared.dependency.graph.DependencyNode;
-import org.apache.maven.shared.dependency.graph.traversal.CollectingDependencyNodeVisitor;
+import org.apache.maven.shared.artifact.filter.resolve.ScopeFilter;
+import org.apache.maven.shared.artifact.filter.resolve.TransformableFilter;
+import org.apache.maven.shared.artifact.resolve.ArtifactResult;
+import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
 
 /**
  * Copies .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -91,8 +91,13 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	@Parameter(defaultValue = "${session}")
 	private MavenSession session;
 
+	/**
+	 * The dependency resolver to.
+	 */
 	@Component
-	private DependencyGraphBuilder treeBuilder;
+	private DependencyResolver dependencyResolver;
+
+	private DefaultDependableCoordinate coordinate = new DefaultDependableCoordinate();
 
 	private File imagejDir;
 
@@ -113,38 +118,32 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 			return;
 		}
 
+		// Initialize coordinate for resolving
+		coordinate.setGroupId(project.getGroupId());
+		coordinate.setArtifactId(project.getArtifactId());
+		coordinate.setVersion(project.getVersion());
+
 		try {
-			ArtifactFilter artifactFilter =
-				new ScopeArtifactFilter(Artifact.SCOPE_COMPILE);
+			TransformableFilter scopeFilter = ScopeFilter.excluding("system", "provided", "test");
+			
+			ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+			buildingRequest.setProject( project );
 
-			ProjectBuildingRequest request = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
-			request.setProject( project );
-			DependencyNode rootNode =
-				treeBuilder.buildDependencyGraph(request, artifactFilter);
-
-			CollectingDependencyNodeVisitor visitor =
-				new CollectingDependencyNodeVisitor();
-			rootNode.accept(visitor);
-
-			for (final DependencyNode dependencyNode : visitor.getNodes())
-			{
-				final Artifact artifact = dependencyNode.getArtifact();
-				final String scope = artifact.getScope();
-				if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) &&
-					!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
-				try {
-					installArtifact(artifact, imagejDir, false,
-						deleteOtherVersions);
+			Iterable<ArtifactResult> resolveDependencies = dependencyResolver
+					.resolveDependencies(buildingRequest, coordinate, scopeFilter);
+				for (ArtifactResult result : resolveDependencies) {
+					try {
+						installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions);
+					}
+					catch (IOException e) {
+						throw new MojoExecutionException("Couldn't download artifact " +
+							result.getArtifact() + ": " + e.getMessage(), e);
+					}
 				}
-				catch (Exception e) {
-					throw new MojoExecutionException("Could not copy " + artifact +
-						" to " + imagejDirectory, e);
-				}
-			}
 		}
-		catch (DependencyGraphBuilderException e) {
-			throw new MojoExecutionException("Could not get the dependencies for " +
-				project.getArtifactId(), e);
+		catch (DependencyResolverException e) {
+			throw new MojoExecutionException(
+				"Couldn't resolve dependencies for artifact: " + e.getMessage(), e);
 		}
 	}
 }

@@ -33,6 +33,8 @@ package net.imagej.maven;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -43,11 +45,15 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.artifact.filter.resolve.AbstractFilter;
+import org.apache.maven.shared.artifact.filter.resolve.AndFilter;
+import org.apache.maven.shared.artifact.filter.resolve.Node;
+import org.apache.maven.shared.artifact.filter.resolve.ScopeFilter;
+import org.apache.maven.shared.artifact.filter.resolve.TransformableFilter;
 import org.apache.maven.shared.artifact.resolve.ArtifactResult;
 import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
-import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
 
 /**
  * Downloads .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -126,12 +132,6 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	private String artifact;
 
 	/**
-	 * The dependency tree builder to use.
-	 */
-	@Component(hint = "default")
-	private DependencyGraphBuilder dependencyGraphBuilder;
-
-	/**
 	 * The dependency resolver to.
 	 */
 	@Component
@@ -143,8 +143,12 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	@Parameter(property = "force")
 	private boolean force;
 
+	/**
+	 * The coordinate use for resolving dependencies.
+	 */
 	private DefaultDependableCoordinate coordinate = new DefaultDependableCoordinate();
 
+	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		if (imagejDirectory == null) {
 			throw new MojoExecutionException(
@@ -194,8 +198,17 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 				new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
 			buildingRequest.setProject(project);
 
+			TransformableFilter scopeFilter = ScopeFilter.excluding("system", "provided", "test");
+			TransformableFilter notOptionalFilter = new AbstractFilter() {
+				@Override
+				public boolean accept(Node node, List<Node> parents) {
+					return !node.getDependency().isOptional();
+				}
+			};
+			TransformableFilter scopeAndNotOptionalFilter = new AndFilter(Arrays.asList(scopeFilter, notOptionalFilter));
+
 			Iterable<ArtifactResult> resolveDependencies = dependencyResolver
-				.resolveDependencies(buildingRequest, coordinate, null);
+				.resolveDependencies(buildingRequest, coordinate, scopeAndNotOptionalFilter);
 			for (ArtifactResult result : resolveDependencies) {
 				try {
 					installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions);
