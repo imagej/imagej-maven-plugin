@@ -32,11 +32,8 @@
 package net.imagej.maven;
 
 import java.io.File;
-import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.execution.MavenSession;
@@ -94,26 +91,8 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	@Parameter(defaultValue = "${session}")
 	private MavenSession session;
 
-	/**
-	 * List of Remote Repositories used by the resolver
-	 */
-	@Parameter(property="remoteRepositories", readonly = true)
-	protected List<ArtifactRepository> remoteRepositories;
-
-	/**
-	 * Location of the local repository.
-	 */
-	@Parameter(property="localRepository", readonly = true)
-	protected ArtifactRepository localRepository;
-
 	@Component
 	private DependencyGraphBuilder treeBuilder;
-
-	/**
-	 * Used to look up Artifacts in the remote repository.
-	 */
-	@Component
-	protected ArtifactResolver artifactResolver;
 
 	private File imagejDir;
 
@@ -155,8 +134,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 					!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
 				try {
 					installArtifact(artifact, imagejDir, false,
-						deleteOtherVersions, artifactResolver, remoteRepositories,
-						localRepository);
+						deleteOtherVersions);
 				}
 				catch (Exception e) {
 					throw new MojoExecutionException("Could not copy " + artifact +

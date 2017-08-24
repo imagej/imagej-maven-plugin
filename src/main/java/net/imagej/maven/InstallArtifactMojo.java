@@ -33,17 +33,7 @@ package net.imagej.maven;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
-import org.apache.maven.artifact.factory.ArtifactFactory;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
-import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
-import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
-import org.apache.maven.artifact.resolver.AbstractArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -51,6 +41,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
+import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.artifact.resolve.ArtifactResult;
 import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
@@ -89,44 +80,15 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	private boolean deleteOtherVersions;
 
 	/**
-	 * Comma-separated list of Remote Repositories used by the resolver
-	 * <p>
-	 * Example:
-	 * {@code -DremoteRepositories=imagej::default::http://maven.imagej.net/content/groups/public}
-	 * .
-	 * </p>
+	 * Project
 	 */
-	@Parameter(property="remoteRepositories", readonly = true)
-	private String remoteRepositories;
+	@Parameter(defaultValue = "${project}", required=true, readonly = true)
+	private MavenProject project;
 
 	/**
-	 * Location of the local repository.
+	 * Session
 	 */
-	@Parameter(property="localRepository", readonly = true)
-	private ArtifactRepository localRepository;
-
-	/**
-	 * Used to look up Artifacts in the remote repository.
-	 */
-	@Component
-	private ArtifactFactory artifactFactory;
-
-	/**
-	 * Used to look up Artifacts in the remote repository.
-	 */
-	@Component
-	private ArtifactResolver artifactResolver;
-
-	@Component
-	private ArtifactRepositoryFactory artifactRepositoryFactory;
-
-	/**
-	 * Map that contains the layouts.
-	 */
-	@Component(role = ArtifactRepositoryLayout.class)
-	private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
-
-	@Parameter( defaultValue = "${session}", required = true, readonly = true )
+	@Parameter(defaultValue = "${session}")
 	private MavenSession session;
 
 	/**
@@ -183,9 +145,6 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 
 	private DefaultDependableCoordinate coordinate = new DefaultDependableCoordinate();
 
-	@Parameter(defaultValue = "${project.remoteRepositories}", required=true, readonly=true)
-	private List<ArtifactRepository> projectRemoteRepositories;
-
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		if (imagejDirectory == null) {
 			throw new MojoExecutionException(
@@ -228,72 +187,24 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 		}
 
 		/*
-		 * Setup repositories to query
-		 */
-		final ArtifactRepositoryLayout layout =
-			(ArtifactRepositoryLayout) repositoryLayouts.get("default");
-
-		if (layout == null) {
-			throw new MojoFailureException("default", "Invalid repository layout",
-				"Invalid repository layout: default");
-		}
-
-		final ArtifactRepositoryPolicy policy =
-			new ArtifactRepositoryPolicy(true,
-				ArtifactRepositoryPolicy.UPDATE_POLICY_ALWAYS,
-				ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN);
-
-		final List<ArtifactRepository> remoteRepositoriesList =
-			new ArrayList<ArtifactRepository>();
-
-		if (projectRemoteRepositories != null) {
-			remoteRepositoriesList.addAll(projectRemoteRepositories);
-		}
-
-		final ArtifactRepository imagej =
-			artifactRepositoryFactory
-				.createArtifactRepository("imagej",
-					"http://maven.imagej.net/content/groups/public", layout, policy,
-					policy);
-		remoteRepositoriesList.add(imagej);
-
-		if (remoteRepositories != null) {
-			String[] repos = remoteRepositories.split(",");
-			int count = 1;
-			for (String repo : repos) {
-				final String id = "dummy" + count++;
-				final ArtifactRepository repository =
-					artifactRepositoryFactory.createArtifactRepository(id, repo, layout,
-						policy, policy);
-
-				remoteRepositoriesList.add(repository);
-			}
-		}
-
-		/*
 		 * Install artifact
 		 */
 		try {
 			ProjectBuildingRequest buildingRequest =
 				new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
-			buildingRequest.setRemoteRepositories(remoteRepositoriesList);
+			buildingRequest.setProject(project);
 
 			Iterable<ArtifactResult> resolveDependencies = dependencyResolver
 				.resolveDependencies(buildingRequest, coordinate, null);
 			for (ArtifactResult result : resolveDependencies) {
 				try {
-					installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions,
-						artifactResolver, remoteRepositoriesList, localRepository);
+					installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions);
 				}
 				catch (IOException e) {
 					throw new MojoExecutionException("Couldn't download artifact " +
 						artifact + ": " + e.getMessage(), e);
 				}
 			}
-		}
-		catch (AbstractArtifactResolutionException e) {
-			throw new MojoExecutionException("Couldn't download artifact: " + e
-				.getMessage(), e);
 		}
 		catch (DependencyResolverException e) {
 			throw new MojoExecutionException(
