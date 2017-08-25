@@ -73,7 +73,16 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 */
 	@Parameter(property="imagej.app.directory")
 	private String imagejDirectoryProperty;
-
+	
+	/**
+	 * The name of the property pointing to the subdirectory where the Jar should be copied to.
+	 * <p>
+	 * If no property of that name exists, it is simply taken as being the empty string .
+	 * </p>
+	 * 
+	 * @parameter property="jars.subdirectory"
+	 */	
+	private String imageJSubDirectoryProperty;
 	/**
 	 * Whether to delete other versions when copying the files.
 	 * <p>
@@ -84,7 +93,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 */
 	@Parameter(property="delete.other.versions")
 	private String deleteOtherVersionsProperty;
-
+	
 	/**
 	 * Comma-separated list of Remote Repositories used by the resolver
 	 * <p>
@@ -175,6 +184,8 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 			throw new MojoFailureException("Could not make directory: " +
 				imagejDirectory);
 		}
+		
+		if (imageJSubDirectoryProperty == null) { imageJSubDirectoryProperty = ""; }
 
 		if (deleteOtherVersionsProperty == null) {
 			deleteOtherVersionsProperty = System.getProperty("deleteOtherVersionsProperty");
