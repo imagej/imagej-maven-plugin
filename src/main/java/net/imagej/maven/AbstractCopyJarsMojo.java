@@ -44,10 +44,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
@@ -69,6 +65,9 @@ import org.codehaus.plexus.util.FileUtils;
  * @author Johannes Schindelin
  */
 public abstract class AbstractCopyJarsMojo extends AbstractMojo {
+
+	public static final String imagejDirectoryProperty = "imagej.app.directory";
+	public static final String deleteOtherVersionsProperty = "delete.other.versions";
 
 	protected boolean hasIJ1Dependency(final MavenProject project) {
 		@SuppressWarnings("unchecked")
@@ -125,13 +124,8 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 	protected void installArtifact(final Artifact artifact,
 		final File imagejDirectory, final boolean force,
-		final boolean deleteOtherVersions, final ArtifactResolver resolver,
-		List<ArtifactRepository> remoteRepositories,
-		ArtifactRepository localRepository) throws ArtifactResolutionException,
-		ArtifactNotFoundException, IOException
+		final boolean deleteOtherVersions) throws IOException
 	{
-		resolver.resolve(artifact, remoteRepositories, localRepository);
-
 		if (!"jar".equals(artifact.getType())) return;
 
 		final File source = artifact.getFile();

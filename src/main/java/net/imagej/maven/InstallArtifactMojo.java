@@ -34,26 +34,36 @@ package net.imagej.maven;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.factory.ArtifactFactory;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
+import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
-import org.apache.maven.artifact.resolver.AbstractArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.artifact.filter.resolve.AbstractFilter;
+import org.apache.maven.shared.artifact.filter.resolve.AndFilter;
+import org.apache.maven.shared.artifact.filter.resolve.Node;
+import org.apache.maven.shared.artifact.filter.resolve.ScopeFilter;
+import org.apache.maven.shared.artifact.filter.resolve.TransformableFilter;
+import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
+import org.apache.maven.shared.artifact.resolve.ArtifactResult;
+import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
+import org.codehaus.plexus.util.StringUtils;
 
 /**
  * Downloads .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -61,7 +71,7 @@ import org.apache.maven.plugins.annotations.Parameter;
  * 
  * @author Johannes Schindelin
  */
-@Mojo(name = "install-artifact", requiresProject = true, requiresOnline = true)
+@Mojo(name = "install-artifact", requiresProject=false)
 public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 
 	/**
@@ -71,8 +81,8 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * files are copied.
 	 * </p>
 	 */
-	@Parameter(property="imagej.app.directory")
-	private String imagejDirectoryProperty;
+	@Parameter(property = imagejDirectoryProperty)
+	private String imagejDirectory;
 
 	/**
 	 * Whether to delete other versions when copying the files.
@@ -82,31 +92,14 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 */
-	@Parameter(property="delete.other.versions")
-	private String deleteOtherVersionsProperty;
+	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "false")
+	private boolean deleteOtherVersions;
 
 	/**
-	 * Comma-separated list of Remote Repositories used by the resolver
-	 * <p>
-	 * Example:
-	 * {@code -DremoteRepositories=imagej::default::http://maven.imagej.net/content/groups/public}
-	 * .
-	 * </p>
+	 * Session
 	 */
-	@Parameter(property="remoteRepositories", readonly = true)
-	private String remoteRepositories;
-
-	/**
-	 * Location of the local repository.
-	 */
-	@Parameter(property="localRepository", readonly = true)
-	private ArtifactRepository localRepository;
-
-	/**
-	 * Used to look up Artifacts in the remote repository.
-	 */
-	@Component
-	private ArtifactFactory artifactFactory;
+	@Parameter(defaultValue = "${session}")
+	private MavenSession session;
 
 	/**
 	 * Used to look up Artifacts in the remote repository.
@@ -116,6 +109,12 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 
 	@Component
 	private ArtifactRepositoryFactory artifactRepositoryFactory;
+	
+	/**
+	 * Location of the local repository.
+	 */
+	@Parameter(property = "localRepository", readonly = true)
+	private ArtifactRepository localRepository;
 
 	/**
 	 * Map that contains the layouts.
@@ -123,8 +122,22 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	@Component(role = ArtifactRepositoryLayout.class)
 	private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
 
-	@Component
-	private ArtifactMetadataSource source;
+	private static final Pattern ALT_REPO_SYNTAX_PATTERN = Pattern.compile( "(.+)::(.*)::(.+)" );
+
+	/**
+	 * Repositories in the format id::[layout]::url or just url, separated by
+	 * comma. ie.
+	 * central::default::http://repo1.maven.apache.org/maven2,myrepo::::http://repo.acme.com,http://repo.acme2.com
+	 */
+	@Parameter(property = "remoteRepositories")
+	private String remoteRepositories;
+
+	/**
+	 * Remote repositories from POM
+	 */
+	@Parameter(defaultValue = "${project.remoteArtifactRepositories}",
+		readonly = true, required = true)
+	private List<ArtifactRepository> pomRemoteRepositories;
 
 	/**
 	 * The groupId of the artifact to download. Ignored if {@link #artifact} is
@@ -148,10 +161,23 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	private String version;
 
 	/**
-	 * A string of the form groupId:artifactId:version[:packaging][:classifier].
+	 * The packaging of the artifact to download. Ignored if {@link #artifact} is
+	 * used.
+	 */
+	@Parameter(property = "packaging", defaultValue = "jar")
+	private String packaging = "jar";
+
+	/**
+	 * A string of the form groupId:artifactId:version[:packaging].
 	 */
 	@Parameter(property = "artifact")
 	private String artifact;
+
+	/**
+	 * The dependency resolver to.
+	 */
+	@Component
+	private DependencyResolver dependencyResolver;
 
 	/**
 	 * Whether to force overwriting files.
@@ -159,118 +185,171 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	@Parameter(property = "force")
 	private boolean force;
 
-	@Parameter(defaultValue = "${project.remoteRepositories}", required=true, readonly=true)
-	private List<ArtifactRepository> projectRemoteRepositories;
+	/**
+	 * The coordinate use for resolving dependencies.
+	 */
+	private DefaultDependableCoordinate coordinate = new DefaultDependableCoordinate();
 
+	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		if (imagejDirectoryProperty == null) {
-			imagejDirectoryProperty = System.getProperty("imagejDirectoryProperty");
-		}
-		if (imagejDirectoryProperty == null) {
+		if (imagejDirectory == null) {
 			throw new MojoExecutionException(
-				"The 'imagej.app.directory' property is unset!");
+				"The '"+imagejDirectoryProperty+"' property is unset!");
 		}
-		File imagejDirectory = new File(imagejDirectoryProperty);
-		if (!imagejDirectory.isDirectory() && !imagejDirectory.mkdirs()) {
+		File imagejDir = new File(imagejDirectory);
+		if (!imagejDir.isDirectory() && !imagejDir.mkdirs()) {
 			throw new MojoFailureException("Could not make directory: " +
-				imagejDirectory);
+				imagejDir);
 		}
 
-		if (deleteOtherVersionsProperty == null) {
-			deleteOtherVersionsProperty = System.getProperty("deleteOtherVersionsProperty");
-		}
-		final boolean deleteOtherVersions =
-			deleteOtherVersionsProperty != null &&
-				deleteOtherVersionsProperty.matches("(?i)true||\\+?[1-9][0-9]*");
+		ArtifactRepositoryPolicy always = new ArtifactRepositoryPolicy(true,
+			ArtifactRepositoryPolicy.UPDATE_POLICY_ALWAYS,
+			ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN);
 
+		List<ArtifactRepository> repoList = new ArrayList<>();
+
+		// Use repositories provided in POM (if available)
+		if (pomRemoteRepositories != null) {
+			repoList.addAll(pomRemoteRepositories);
+		}
+
+		// Add remote repositories provided as parameter
+		if (remoteRepositories != null) {
+			String[] repos = remoteRepositories.split(",");
+			for (String repo : repos) {
+				repoList.add(parseRepository(repo, always));
+			}
+		}
+
+		// Add ImageJ remote repository
+		repoList.add(parseRepository("http://maven.imagej.net/content/groups/public", always));
+
+		/*
+		 * Determine GAV to download
+		 */
 		if (artifactId == null && artifact == null) {
 			throw new MojoFailureException(
 				"No artifact specified (e.g. by -Dartifact=net.imagej:ij:1.48p)");
 		}
 		if (artifact != null) {
 			String[] tokens = artifact.split(":");
-			if (tokens.length != 3) {
-				throw new MojoFailureException(
-					"Invalid artifact, you must specify groupId:artifactId:version " +
-						artifact);
-			}
-			groupId = tokens[0];
-			artifactId = tokens[1];
-			version = tokens[2];
+			parseArtifact(tokens);
 		}
 
-		final Artifact toDownload =
-			artifactFactory.createBuildArtifact(groupId, artifactId, version, "jar");
-		final Artifact pomToDownload =
-			artifactFactory.createBuildArtifact(groupId, artifactId, version, "pom");
-
-		final ArtifactRepositoryLayout layout =
-			(ArtifactRepositoryLayout) repositoryLayouts.get("default");
-
-		if (layout == null) {
-			throw new MojoFailureException("default", "Invalid repository layout",
-				"Invalid repository layout: default");
-		}
-
-		final ArtifactRepositoryPolicy policy =
-			new ArtifactRepositoryPolicy(true,
-				ArtifactRepositoryPolicy.UPDATE_POLICY_ALWAYS,
-				ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN);
-
-		final List<ArtifactRepository> remoteRepositoriesList =
-			new ArrayList<ArtifactRepository>();
-
-		if (projectRemoteRepositories != null) {
-			remoteRepositoriesList.addAll(projectRemoteRepositories);
-		}
-
-		final ArtifactRepository imagej =
-			artifactRepositoryFactory
-				.createArtifactRepository("imagej",
-					"http://maven.imagej.net/content/groups/public", layout, policy,
-					policy);
-		remoteRepositoriesList.add(imagej);
-
-		if (remoteRepositories != null) {
-			String[] repos = remoteRepositories.split(",");
-			int count = 1;
-			for (String repo : repos) {
-				final String id = "dummy" + count++;
-				final ArtifactRepository repository =
-					artifactRepositoryFactory.createArtifactRepository(id, repo, layout,
-						policy, policy);
-
-				remoteRepositoriesList.add(repository);
-			}
-		}
-
+		/*
+		 * Install artifact
+		 */
 		try {
-			final Set<Artifact> set = new HashSet<Artifact>();
-			set.add(toDownload);
-			final ArtifactResolutionResult result =
-				artifactResolver.resolveTransitively(set, pomToDownload,
-					remoteRepositoriesList, localRepository, source);
-			@SuppressWarnings("unchecked")
-			final Set<Artifact> artifacts = (Set<Artifact>) result.getArtifacts();
-			for (final Artifact artifact : artifacts)
+			ProjectBuildingRequest buildingRequest =
+				new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+			buildingRequest.setLocalRepository(localRepository);
+			buildingRequest.setRemoteRepositories(repoList);
+
+			TransformableFilter scopeFilter = ScopeFilter.excluding("system", "provided", "test");
+			TransformableFilter notOptionalFilter = new AbstractFilter() {
+				@Override
+				public boolean accept(Node node, List<Node> parents) {
+					return !node.getDependency().isOptional();
+				}
+			};
+			TransformableFilter scopeAndNotOptionalFilter = new AndFilter(Arrays.asList(scopeFilter, notOptionalFilter));
+
+			Iterable<ArtifactResult> resolveDependencies = dependencyResolver
+				.resolveDependencies(buildingRequest, coordinate, scopeAndNotOptionalFilter);
+			for (ArtifactResult result : resolveDependencies) {
 				try {
-					final String scope = artifact == null ? null : artifact.getScope();
-					if (artifact.isOptional()) continue;
-					if (Artifact.SCOPE_SYSTEM.equals(scope) ||
-						Artifact.SCOPE_PROVIDED.equals(scope) ||
-						Artifact.SCOPE_TEST.equals(scope)) continue;
-					installArtifact(artifact, imagejDirectory, force,
-						deleteOtherVersions, artifactResolver, remoteRepositoriesList,
-						localRepository);
+					installArtifact(result.getArtifact(), imagejDir, false,
+						deleteOtherVersions);
 				}
 				catch (IOException e) {
 					throw new MojoExecutionException("Couldn't download artifact " +
 						artifact + ": " + e.getMessage(), e);
 				}
+			}
 		}
-		catch (AbstractArtifactResolutionException e) {
-			throw new MojoExecutionException("Couldn't download artifact: " +
-				e.getMessage(), e);
+		catch (DependencyResolverException e) {
+			throw new MojoExecutionException(
+				"Couldn't resolve dependencies for artifact: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * Parses an artifact string of form
+	 * {@code groupId:artifactId:version[:packaging]}.
+	 * 
+	 * @param tokens
+	 * @throws MojoFailureException
+	 */
+	private void parseArtifact(final String[] tokens) throws MojoFailureException {
+		if (tokens.length != 3) {
+			throw new MojoFailureException(
+				"Invalid artifact, you must specify groupId:artifactId:version " +
+					artifact);
+		}
+		groupId = tokens[0];
+		artifactId = tokens[1];
+		version = tokens[2];
+
+		coordinate.setGroupId(groupId);
+		coordinate.setArtifactId(artifactId);
+		coordinate.setVersion(version);
+
+		if (tokens.length == 4) {
+			coordinate.setType(tokens[3]);
+		}
+	}
+
+	/**
+	 * Parses repository string of form [id::layout::]url
+	 *
+	 * @param repository {@link String} to be parsed
+	 * @param policy The {@link ArtifactRepositoryPolicy} for the repository
+	 * @return an {@link ArtifactRepository} instance
+	 * @throws MojoFailureException
+	 */
+	private ArtifactRepository parseRepository(final String repository,
+		final ArtifactRepositoryPolicy policy) throws MojoFailureException
+	{
+		// if it's a simple url
+		String id = "temp";
+		ArtifactRepositoryLayout layout = getLayout("default");
+		String url = repository;
+
+		// if it's an extended repo URL of the form id::layout::url
+		if (repository.contains("::")) {
+			Matcher matcher = ALT_REPO_SYNTAX_PATTERN.matcher(repository);
+			if (!matcher.matches()) {
+				throw new MojoFailureException(repository,
+					"Invalid syntax for repository: " + repository,
+					"Invalid syntax for repository. Use \"id::layout::url\" or \"URL\".");
+			}
+
+			id = matcher.group(1).trim();
+			if (!StringUtils.isEmpty(matcher.group(2))) {
+				layout = getLayout(matcher.group(2).trim());
+			}
+			url = matcher.group(3).trim();
+		}
+		return new MavenArtifactRepository(id, url, layout, policy, policy);
+	}
+
+	/**
+	 * Determines the layout of a provided repository.
+	 *
+	 * @param id Id to be queried.
+	 * @return An {@link ArtifactRepositoryLayout} instance.
+	 * @throws MojoFailureException
+	 */
+	private ArtifactRepositoryLayout getLayout(final String id)
+		throws MojoFailureException
+	{
+		ArtifactRepositoryLayout layout = repositoryLayouts.get(id);
+
+		if (layout == null) {
+			throw new MojoFailureException(id, "Invalid repository layout",
+				"Invalid repository layout: " + id);
+		}
+
+		return layout;
 	}
 }

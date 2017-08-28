@@ -32,26 +32,22 @@
 package net.imagej.maven;
 
 import java.io.File;
-import java.util.List;
+import java.io.IOException;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.factory.ArtifactFactory;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactCollector;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
-import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.dependency.tree.DependencyNode;
-import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
-import org.apache.maven.shared.dependency.tree.DependencyTreeBuilderException;
-import org.apache.maven.shared.dependency.tree.traversal.CollectingDependencyNodeVisitor;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.artifact.filter.resolve.ScopeFilter;
+import org.apache.maven.shared.artifact.filter.resolve.TransformableFilter;
+import org.apache.maven.shared.artifact.resolve.ArtifactResult;
+import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
+import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
 
 /**
  * Copies .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -69,8 +65,8 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * files are copied.
 	 * </p>
 	 */
-	@Parameter(defaultValue="imagej.app.directory")
-	private String imagejDirectoryProperty;
+	@Parameter(property = imagejDirectoryProperty, required = false)
+	private String imagejDirectory;
 
 	/**
 	 * Whether to delete other versions when copying the files.
@@ -80,9 +76,12 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 */
-	@Parameter(property="delete.other.versions")
+	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "false")
 	private boolean deleteOtherVersions;
 
+	/**
+	 * Project
+	 */
 	@Parameter(defaultValue = "${project}", required=true, readonly = true)
 	private MavenProject project;
 
@@ -93,99 +92,58 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	private MavenSession session;
 
 	/**
-	 * List of Remote Repositories used by the resolver
-	 */
-	@Parameter(property="remoteRepositories", readonly = true)
-	protected List<ArtifactRepository> remoteRepositories;
-
-	/**
-	 * Location of the local repository.
-	 */
-	@Parameter(property="localRepository", readonly = true)
-	protected ArtifactRepository localRepository;
-
-	@Component
-	private ArtifactMetadataSource artifactMetadataSource;
-
-	@Component
-	private ArtifactCollector artifactCollector;
-
-	@Component
-	private DependencyTreeBuilder treeBuilder;
-
-	/**
-	 * Used to look up Artifacts in the remote repository.
+	 * The dependency resolver to.
 	 */
 	@Component
-	protected ArtifactFactory artifactFactory;
+	private DependencyResolver dependencyResolver;
 
-	/**
-	 * Used to look up Artifacts in the remote repository.
-	 */
-	@Component
-	protected ArtifactResolver artifactResolver;
+	private DefaultDependableCoordinate coordinate = new DefaultDependableCoordinate();
 
-	private File imagejDirectory;
+	private File imagejDir;
 
 	@Override
 	public void execute() throws MojoExecutionException {
-		if (imagejDirectoryProperty == null) {
-			getLog().info("No property name for the ImageJ.app/ directory location was specified; Skipping");
-			return;
-		}
-		String path = System.getProperty(imagejDirectoryProperty);
-		if (path == null) path =
-			project.getProperties().getProperty(imagejDirectoryProperty);
-		if (path == null) {
+		if (imagejDirectory == null) {
 			if (hasIJ1Dependency(project)) getLog().info(
 				"Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
 			return;
 		}
-		final String interpolated = interpolate(path, project, session);
-		imagejDirectory = new File(interpolated);
-		if (!imagejDirectory.isDirectory()) {
+		final String interpolated = interpolate(imagejDirectory, project, session);
+		imagejDir = new File(interpolated);
+		if (!imagejDir.isDirectory()) {
 			getLog().warn(
 				"'" + imagejDirectory + "'" +
-					(interpolated.equals(path) ? "" : " (" + path + ")") +
+					(interpolated.equals(imagejDirectory) ? "" : " (" + imagejDirectory + ")") +
 					" is not an ImageJ.app/ directory; Skipping copy-jars");
 			return;
 		}
 
+		// Initialize coordinate for resolving
+		coordinate.setGroupId(project.getGroupId());
+		coordinate.setArtifactId(project.getArtifactId());
+		coordinate.setVersion(project.getVersion());
+
 		try {
-			ArtifactFilter artifactFilter =
-				new ScopeArtifactFilter(Artifact.SCOPE_COMPILE);
-			DependencyNode rootNode =
-				treeBuilder.buildDependencyTree(project, localRepository,
-					artifactFactory, artifactMetadataSource, artifactFilter,
-					artifactCollector);
+			TransformableFilter scopeFilter = ScopeFilter.excluding("system", "provided", "test");
+			
+			ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+			buildingRequest.setProject( project );
 
-			CollectingDependencyNodeVisitor visitor =
-				new CollectingDependencyNodeVisitor();
-			rootNode.accept(visitor);
-
-			for (final DependencyNode dependencyNode : (List<DependencyNode>) visitor
-				.getNodes())
-			{
-				if (dependencyNode.getState() == DependencyNode.INCLUDED) {
-					final Artifact artifact = dependencyNode.getArtifact();
-					final String scope = artifact.getScope();
-					if (scope != null && !scope.equals(Artifact.SCOPE_COMPILE) &&
-						!scope.equals(Artifact.SCOPE_RUNTIME)) continue;
+			Iterable<ArtifactResult> resolveDependencies = dependencyResolver
+					.resolveDependencies(buildingRequest, coordinate, scopeFilter);
+				for (ArtifactResult result : resolveDependencies) {
 					try {
-						installArtifact(artifact, imagejDirectory, false,
-							deleteOtherVersions, artifactResolver, remoteRepositories,
-							localRepository);
+						installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions);
 					}
-					catch (Exception e) {
-						throw new MojoExecutionException("Could not copy " + artifact +
-							" to " + imagejDirectory, e);
+					catch (IOException e) {
+						throw new MojoExecutionException("Couldn't download artifact " +
+							result.getArtifact() + ": " + e.getMessage(), e);
 					}
 				}
-			}
 		}
-		catch (DependencyTreeBuilderException e) {
-			throw new MojoExecutionException("Could not get the dependencies for " +
-				project.getArtifactId(), e);
+		catch (DependencyResolverException e) {
+			throw new MojoExecutionException(
+				"Couldn't resolve dependencies for artifact: " + e.getMessage(), e);
 		}
 	}
 }
