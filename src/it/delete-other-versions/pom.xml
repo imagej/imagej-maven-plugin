@@ -50,7 +50,7 @@
 				<artifactId>imagej-maven-plugin</artifactId>
 				<version>${imagej-maven.version}</version>
 				<configuration>
-					<deleteOtherVersions>true</deleteOtherVersions>
+					<deleteOtherVersions>false</deleteOtherVersions>
 				</configuration>
 				<executions>
 					<execution>
