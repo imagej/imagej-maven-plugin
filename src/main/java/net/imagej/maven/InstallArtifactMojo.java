@@ -75,10 +75,9 @@ import org.codehaus.plexus.util.StringUtils;
 public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 
 	/**
-	 * The name of the property pointing to the ImageJ.app/ directory.
+	 * Path to the ImageJ.app/ directory to which artifacts are installed.
 	 * <p>
-	 * If no property of that name exists, or if it is not a directory, no .jar
-	 * files are copied.
+	 * If it is not a directory, no .jar files are copied.
 	 * </p>
 	 */
 	@Parameter(property = imagejDirectoryProperty)
