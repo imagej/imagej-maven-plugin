@@ -91,7 +91,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 */
-	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "false")
+	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "true")
 	private boolean deleteOtherVersions;
 
 	/**

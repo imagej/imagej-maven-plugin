@@ -32,4 +32,4 @@ source(new File(basedir, "../../../src/it/lib.bsh").getPath());
 
 assertTrue("Should exist: " + plugin, plugin.exists());
 obsolete = new File(plugins, "Example_PlugIn-0.9.0-obsolete.jar");
-assertTrue("Should not exist: " + obsolete, !obsolete.exists());
+assertTrue("Should still exist: " + obsolete, obsolete.exists());
