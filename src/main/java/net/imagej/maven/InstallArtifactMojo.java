@@ -47,8 +47,10 @@ import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -65,6 +67,8 @@ import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
 import org.apache.maven.shared.dependencies.DependableCoordinate;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
 import org.codehaus.plexus.util.StringUtils;
 
 /**
@@ -104,8 +108,20 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 */
-	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "true")
+	@Deprecated
+	@Parameter(property = deleteOtherVersionsProperty)
 	private boolean deleteOtherVersions;
+
+	/**
+	 * Whether to delete other versions when copying the files.
+	 * <p>
+	 * When copying a file and its dependencies to an ImageJ.app/ directory and
+	 * there are other versions of the same file, we can warn or delete those
+	 * other versions.
+	 * </p>
+	 */
+	@Parameter(property = deleteOtherVersionsPolicyProperty, defaultValue = "older")
+	private OtherVersions deleteOtherVersionsPolicy;
 
 	/**
 	 * Session
@@ -202,8 +218,24 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 */
 	private DefaultDependableCoordinate coordinate = new DefaultDependableCoordinate();
 
+	@Parameter( defaultValue = "${mojoExecution}", readonly = true )
+	MojoExecution mojoExecution;
+
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		// Keep backwards compatibility to delete.other.versions
+		ExpressionEvaluator evaluator = new PluginParameterExpressionEvaluator(session, mojoExecution);
+		try {
+			Object evaluate = evaluator.evaluate("${"+deleteOtherVersionsProperty+"}");
+			if (evaluate != null) {
+				getLog().warn("Property '" + deleteOtherVersionsProperty + "' is deprecated. Use '"+ deleteOtherVersionsPolicyProperty +"' instead");
+				deleteOtherVersionsPolicy = deleteOtherVersions ? OtherVersions.always : OtherVersions.never;
+			}
+		}
+		catch (ExpressionEvaluationException e) {
+			getLog().warn(e);
+		}
+
 		if (imagejDirectory == null) {
 			throw new MojoExecutionException(
 				"The '"+imagejDirectoryProperty+"' property is unset!");
@@ -278,11 +310,11 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 				try {
 					if ( isSameGAV(coordinate, result.getArtifact()) )
 					{
-						installArtifact( result.getArtifact(), imagejDir, imagejSubdirectory, false, deleteOtherVersions );
+						installArtifact( result.getArtifact(), imagejDir, imagejSubdirectory, false, deleteOtherVersionsPolicy );
 						continue;
 					}
 					installArtifact(result.getArtifact(), imagejDir, false,
-						deleteOtherVersions);
+						deleteOtherVersionsPolicy);
 				}
 				catch (IOException e) {
 					throw new MojoExecutionException("Couldn't download artifact " +

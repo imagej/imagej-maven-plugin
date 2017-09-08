@@ -35,7 +35,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -48,6 +50,8 @@ import org.apache.maven.shared.artifact.resolve.ArtifactResult;
 import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
 
 /**
  * Copies .jar artifacts and their dependencies into an ImageJ.app/ directory
@@ -85,8 +89,20 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 	 * other versions.
 	 * </p>
 	 */
-	@Parameter(property = deleteOtherVersionsProperty, defaultValue = "true")
+	@Deprecated
+	@Parameter(property = deleteOtherVersionsProperty)
 	private boolean deleteOtherVersions;
+
+	/**
+	 * Whether to delete other versions when copying the files.
+	 * <p>
+	 * When copying a file and its dependencies to an ImageJ.app/ directory and
+	 * there are other versions of the same file, we can warn or delete those
+	 * other versions.
+	 * </p>
+	 */
+	@Parameter(property = deleteOtherVersionsPolicyProperty, defaultValue = "older")
+	private OtherVersions deleteOtherVersionsPolicy;
 
 	/**
 	 * Project
@@ -110,8 +126,24 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 
 	private File imagejDir;
 
+	@Parameter( defaultValue = "${mojoExecution}", readonly = true )
+	MojoExecution mojoExecution;
+	
 	@Override
 	public void execute() throws MojoExecutionException {
+		// Keep backwards compatibility to delete.other.versions
+		ExpressionEvaluator evaluator = new PluginParameterExpressionEvaluator(session, mojoExecution);
+		try {
+			Object evaluate = evaluator.evaluate("${"+deleteOtherVersionsProperty+"}");
+			if (evaluate != null) {
+				getLog().warn("Property '" + deleteOtherVersionsProperty + "' is deprecated. Use '"+ deleteOtherVersionsPolicyProperty +"' instead");
+				deleteOtherVersionsPolicy = deleteOtherVersions ? OtherVersions.always : OtherVersions.never;
+			}
+		}
+		catch (ExpressionEvaluationException e) {
+			getLog().warn(e);
+		}
+
 		if (imagejDirectory == null) {
 			if (hasIJ1Dependency(project)) getLog().info(
 				"Property '" + imagejDirectoryProperty + "' unset; Skipping copy-jars");
@@ -150,10 +182,10 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 					try {
 						if (project.getArtifact().equals(result.getArtifact())) {
 							installArtifact(result.getArtifact(), imagejDir, imagejSubdirectory, false,
-								deleteOtherVersions);
+								deleteOtherVersionsPolicy);
 							continue;
 						}
-						installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersions);
+						installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersionsPolicy);
 					}
 					catch (IOException e) {
 						throw new MojoExecutionException("Couldn't download artifact " +
