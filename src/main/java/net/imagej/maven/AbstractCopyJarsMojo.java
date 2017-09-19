@@ -32,8 +32,10 @@
 package net.imagej.maven;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +44,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
@@ -67,6 +70,7 @@ import org.codehaus.plexus.util.FileUtils;
 public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 	public static final String imagejDirectoryProperty = "imagej.app.directory";
+	public static final String imagejSubdirectoryProperty = "imagej.app.subdirectory";
 	public static final String deleteOtherVersionsProperty = "delete.other.versions";
 
 	protected boolean hasIJ1Dependency(final MavenProject project) {
@@ -126,12 +130,21 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 		final File imagejDirectory, final boolean force,
 		final boolean deleteOtherVersions) throws IOException
 	{
+		installArtifact(artifact, imagejDirectory, "", force, deleteOtherVersions);
+	}
+
+	protected void installArtifact(final Artifact artifact,
+		final File imagejDirectory, final String subdirectory, final boolean force,
+		final boolean deleteOtherVersions) throws IOException
+	{
 		if (!"jar".equals(artifact.getType())) return;
 
 		final File source = artifact.getFile();
 		final File targetDirectory;
 
-		if (isIJ1Plugin(source)) {
+		if (subdirectory != null && !subdirectory.equals("")) {
+			targetDirectory = new File(imagejDirectory, subdirectory);
+		} else if (isIJ1Plugin(source)) {
 			targetDirectory = new File(imagejDirectory, "plugins");
 		}
 		else if ("ome".equals(artifact.getGroupId()) ||
@@ -159,18 +172,18 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 			FileUtils.copyFile(source, target);
 		}
 
-		final Collection<File> otherVersions = getEncroachingVersions(target);
+		final Collection<Path> otherVersions = getEncroachingVersions(Paths.get(imagejDirectory.toURI()), Paths.get(target.toURI()));
 		if (otherVersions != null && !otherVersions.isEmpty()) {
-			for (final File file : otherVersions) {
+			for (final Path file : otherVersions) {
 				if (!deleteOtherVersions) {
 					getLog().warn(
-						"Possibly incompatible version exists: " + file.getName());
+						"Possibly incompatible version exists: " + file.getFileName());
 				}
-				else if (file.delete()) {
-					getLog().info("Deleted overridden " + file.getName());
+				else if (Files.deleteIfExists(file)) {
+					getLog().info("Deleted overridden " + file.getFileName());
 				}
 				else {
-					getLog().warn("Could not delete overridden " + file.getName());
+					getLog().warn("Could not delete overridden " + file.getFileName());
 				}
 			}
 		}
@@ -203,33 +216,41 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 	private final static int PREFIX_INDEX = 1;
 	private final static int SUFFIX_INDEX = 5;
 
-	private static Collection<File> getEncroachingVersions(final File file) {
-		// TODO reuse FileUtils.stripFilenameVersion logic
-		final Matcher matcher = versionPattern.matcher(file.getName());
+	/**
+	 * Looks for files in {@code directory} with the same base name as
+	 * {@code file}.
+	 *
+	 * @param directory The directory to walk to find possible duplicates.
+	 * @param file A {@link Path} to the target (from which the base name is
+	 *          derived).
+	 * @return A collection of {@link Path}s to files of the same base name.
+	 */
+	private Collection<Path> getEncroachingVersions(final Path directory, final Path file) {
+		final Matcher matcher = versionPattern.matcher(file.getFileName().toString());
 		if (!matcher.matches()) return null;
 
 		final String prefix = matcher.group(PREFIX_INDEX);
 		final String suffix = matcher.group(SUFFIX_INDEX);
-		final File parent = file.getParentFile();
-		final File directory =
-			parent != null ? parent : file.getAbsoluteFile().getParentFile();
-		if (directory == null) return null;
-		final File[] candidates = directory.listFiles(new FilenameFilter() {
 
-			public boolean accept(File dir, String name) {
-				if (!name.startsWith(prefix)) return false;
-				final Matcher matcher = versionPattern.matcher(name);
-				return matcher.matches() &&
-					prefix.equals(matcher.group(PREFIX_INDEX)) &&
-					suffix.equals(matcher.group(SUFFIX_INDEX));
-			}
-		});
-		if (candidates == null || candidates.length == (file.exists() ? 1 : 0)) return null;
-
-		final Collection<File> result = new ArrayList<File>();
-		for (final File candidate : candidates) {
-			if (!candidate.equals(file)) result.add(candidate);
+		Collection<Path> result = new ArrayList<>();
+		try {
+			result = Files.walk(directory)
+			.filter(path -> path.getFileName().toString().startsWith(prefix))
+			.filter(path -> {
+				final Matcher matcherIterator = versionPattern.matcher(path.getFileName().toString());
+				return matcherIterator.matches() &&
+					prefix.equals(matcherIterator.group(PREFIX_INDEX)) &&
+					suffix.equals(matcherIterator.group(SUFFIX_INDEX));
+			})
+			.filter(path -> !path.getFileName().toString().equals(file.getFileName().toString()))
+			.collect(Collectors.toCollection(ArrayList::new));
+			return result;
+		} catch (IOException e) {
+			getLog().error(e);
+		} finally {
+			result = new ArrayList<>();
 		}
+
 		return result;
 	}
 }
