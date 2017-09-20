@@ -182,6 +182,8 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 						if (!matcher.matches()) break;
 						final String otherVersion = matcher.group(VERSION_INDEX).substring(1);
 						newerVersion = VersionUtils.compare(toInstall, otherVersion) < 0;
+						if (majorVersion(toInstall) != majorVersion(otherVersion))
+							getLog().warn("Found other version that is incompatible according to SemVer.");
 						if (newerVersion)
 							break;
 						//$FALL-THROUGH$
@@ -236,6 +238,20 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 	private final static int PREFIX_INDEX = 1;
 	private final static int VERSION_INDEX = 2;
 	private final static int SUFFIX_INDEX = 5;
+
+	/**
+	 * Extracts the major version (according to SemVer) from a version string.
+	 * If no dot is found, the input is returned.
+	 * 
+	 * @param v
+	 *            SemVer version string
+	 * @return The major version (according to SemVer) as {@code String}.
+	 */
+	private String majorVersion( String v )
+	{
+	final int dot = v.indexOf('.');
+	return dot < 0 ? v : v.substring(0, dot);
+	}
 
 	/**
 	 * Looks for files in {@code directory} with the same base name as

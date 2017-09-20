@@ -30,13 +30,15 @@
  */
 source(new File(basedir, "../../../src/it/lib.bsh").getPath());
 
+// copy-jars
 if (!plugins.exists()) plugins.mkdirs();
 touchFile(new File(plugins, "Example_PlugIn-1.1.0.jar"));
 
-other = new File(basedir, "Other.app/");
+// install-artifact
+other = new File(basedir, "target/Other.app/");
 if (!other.exists()) other.mkdirs();
 
 otherPlugins = new File(other, "plugins/");
 if (!otherPlugins.exists()) otherPlugins.mkdirs();
 
-touchFile(new File(otherPlugins, "Example_PlugIn-1.1.0.jar"));
+touchFile(new File(otherPlugins, "Example_PlugIn-2.1.0.jar"));
