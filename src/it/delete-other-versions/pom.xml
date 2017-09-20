@@ -41,6 +41,7 @@
 	<properties>
 		<imagej.app.directory>${project.basedir}/target/ImageJ.app/</imagej.app.directory>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<delete.other.versions>false</delete.other.versions>
 	</properties>
 
 	<build>
@@ -49,9 +50,6 @@
 				<groupId>net.imagej</groupId>
 				<artifactId>imagej-maven-plugin</artifactId>
 				<version>${imagej-maven.version}</version>
-				<configuration>
-					<deleteOtherVersions>false</deleteOtherVersions>
-				</configuration>
 				<executions>
 					<execution>
 						<id>copy-jars</id>
