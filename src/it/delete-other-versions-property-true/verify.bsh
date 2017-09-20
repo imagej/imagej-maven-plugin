@@ -30,6 +30,6 @@
  */
 source(new File(basedir, "../../../src/it/lib.bsh").getPath());
 
-assertTrue("Should exist: " + plugin, plugin.exists());
+assertTrue("Should not exist: " + plugin, !plugin.exists());
 otherVersion = new File(plugins, "Example_PlugIn-1.1.0.jar");
-assertTrue("Should not exist: " + otherVersion, !otherVersion.exists());
+assertTrue("Should exist: " + otherVersion, otherVersion.exists());

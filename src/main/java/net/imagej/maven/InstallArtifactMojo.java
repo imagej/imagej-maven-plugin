@@ -229,7 +229,7 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 			Object evaluate = evaluator.evaluate("${"+deleteOtherVersionsProperty+"}");
 			if (evaluate != null) {
 				getLog().warn("Property '" + deleteOtherVersionsProperty + "' is deprecated. Use '"+ deleteOtherVersionsPolicyProperty +"' instead");
-				deleteOtherVersionsPolicy = deleteOtherVersions ? OtherVersions.always : OtherVersions.never;
+				deleteOtherVersionsPolicy = deleteOtherVersions ? OtherVersions.older : OtherVersions.never;
 			}
 		}
 		catch (ExpressionEvaluationException e) {
