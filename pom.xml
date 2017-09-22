@@ -31,9 +31,9 @@
 
 	<developers>
 		<developer>
-			<id>ctrueden</id>
-			<name>Curtis Rueden</name>
-			<url>http://imagej.net/User:Rueden</url>
+			<id>stelfrich</id>
+			<name>Stefan Helfrich</name>
+			<url>http://imagej.net/User:Stelfrich</url>
 			<roles>
 				<role>lead</role>
 				<role>developer</role>
@@ -43,6 +43,16 @@
 				<role>maintainer</role>
 			</roles>
 		</developer>
+		<developer>
+			<id>ctrueden</id>
+			<name>Curtis Rueden</name>
+			<url>http://imagej.net/User:Rueden</url>
+			<roles>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>	
 	</developers>
 	<contributors>
 		<contributor>
