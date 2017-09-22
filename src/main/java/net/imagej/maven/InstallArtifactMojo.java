@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
@@ -61,6 +62,7 @@ import org.apache.maven.shared.artifact.filter.resolve.TransformableFilter;
 import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
 import org.apache.maven.shared.artifact.resolve.ArtifactResult;
 import org.apache.maven.shared.dependencies.DefaultDependableCoordinate;
+import org.apache.maven.shared.dependencies.DependableCoordinate;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolver;
 import org.apache.maven.shared.dependencies.resolve.DependencyResolverException;
 import org.codehaus.plexus.util.StringUtils;
@@ -82,6 +84,17 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	 */
 	@Parameter(property = imagejDirectoryProperty)
 	private String imagejDirectory;
+
+	/**
+	 * The name of the property pointing to the subdirectory (beneath e.g.
+	 * {@code jars/} or {@code plugins/}) to which the artifact should be
+	 * copied.
+	 * <p>
+	 * If no property of that name exists, no subdirectory will be used.
+	 * </p>
+	 */
+	@Parameter( property = imagejSubdirectoryProperty, required = false )
+	private String imagejSubdirectory;
 
 	/**
 	 * Whether to delete other versions when copying the files.
@@ -201,6 +214,12 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 				imagejDir);
 		}
 
+		if ( imagejSubdirectory == null )
+		{
+			getLog().info( "No property name for the " + imagejSubdirectoryProperty +
+					" directory location was specified; Installing in default location" );
+		}
+
 		ArtifactRepositoryPolicy always = new ArtifactRepositoryPolicy(true,
 			ArtifactRepositoryPolicy.UPDATE_POLICY_ALWAYS,
 			ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN);
@@ -257,6 +276,11 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 				.resolveDependencies(buildingRequest, coordinate, scopeAndNotOptionalFilter);
 			for (ArtifactResult result : resolveDependencies) {
 				try {
+					if ( isSameGAV(coordinate, result.getArtifact()) )
+					{
+						installArtifact( result.getArtifact(), imagejDir, imagejSubdirectory, false, deleteOtherVersions );
+						continue;
+					}
 					installArtifact(result.getArtifact(), imagejDir, false,
 						deleteOtherVersions);
 				}
@@ -270,6 +294,23 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 			throw new MojoExecutionException(
 				"Couldn't resolve dependencies for artifact: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * Checks if a {@link DependableCoordinate} and an {@link Artifact} share
+	 * the same GAV.
+	 *
+	 * @param coordinateToCompare
+	 *            a {@link DependableCoordinate} instance
+	 * @param artifactToCompare
+	 *            an {@link Artifact} instance
+	 * @return true if both parameters share the same GAV; false otherwise
+	 */
+	private boolean isSameGAV(final DependableCoordinate coordinateToCompare, final Artifact artifactToCompare) {
+		boolean same = coordinateToCompare.getGroupId().equals(artifactToCompare.getGroupId());
+		same = same && coordinateToCompare.getArtifactId().equals(artifactToCompare.getArtifactId());
+		same = same && coordinateToCompare.getVersion().equals(artifactToCompare.getVersion());
+		return same;
 	}
 
 	/**

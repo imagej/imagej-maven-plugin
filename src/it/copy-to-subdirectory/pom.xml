@@ -66,6 +66,18 @@
 							<goal>copy-jars</goal>
 						</goals>
 					</execution>
+					<execution>
+						<id>install-artifact</id>
+						<phase>install</phase>
+						<goals>
+							<goal>install-artifact</goal>
+						</goals>
+						<configuration>
+							<imagejDirectory>${project.basedir}/target/Other.app/</imagejDirectory>
+							<imagejSubdirectory>jars/Subdirectory/</imagejSubdirectory>
+							<artifact>${project.groupId}:${project.artifactId}:${project.version}</artifact>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>
