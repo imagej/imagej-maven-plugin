@@ -88,6 +88,7 @@ Wisconsin-Madison, Broad Institute of MIT and Harvard, and Max Planck
 Institute of Molecular Cell Biology and Genetics.</license.copyrightOwners>
 		<license.projectName>ImageJ software for multidimensional image processing and analysis.</license.projectName>
 		<maven.version>3.0</maven.version>
+		<scijava-common.version>2.66.0</scijava-common.version>
 	</properties>
 
 	<dependencies>
@@ -143,6 +144,12 @@ Institute of Molecular Cell Biology and Genetics.</license.copyrightOwners>
 			<groupId>org.codehaus.plexus</groupId>
 			<artifactId>plexus-utils</artifactId>
 			<version>3.1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>scijava-common</artifactId>
+			<version>${scijava-common.version}</version>
 		</dependency>
 	</dependencies>
 

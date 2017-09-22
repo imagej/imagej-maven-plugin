@@ -60,6 +60,7 @@ import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
 import org.codehaus.plexus.interpolation.RecursionInterceptor;
 import org.codehaus.plexus.interpolation.RegexBasedInterpolator;
 import org.codehaus.plexus.util.FileUtils;
+import org.scijava.util.VersionUtils;
 
 /**
  * Base class for mojos to copy .jar artifacts and their dependencies into an
@@ -72,6 +73,11 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 	public static final String imagejDirectoryProperty = "imagej.app.directory";
 	public static final String imagejSubdirectoryProperty = "imagej.app.subdirectory";
 	public static final String deleteOtherVersionsProperty = "delete.other.versions";
+	public static final String deleteOtherVersionsPolicyProperty = "imagej.deleteOtherVersions";
+
+	public enum OtherVersions {
+			always, older, never
+	}
 
 	protected boolean hasIJ1Dependency(final MavenProject project) {
 		@SuppressWarnings("unchecked")
@@ -128,14 +134,14 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 
 	protected void installArtifact(final Artifact artifact,
 		final File imagejDirectory, final boolean force,
-		final boolean deleteOtherVersions) throws IOException
+		final OtherVersions otherVersionsPolicy) throws IOException
 	{
-		installArtifact(artifact, imagejDirectory, "", force, deleteOtherVersions);
+		installArtifact(artifact, imagejDirectory, "", force, otherVersionsPolicy);
 	}
 
 	protected void installArtifact(final Artifact artifact,
 		final File imagejDirectory, final String subdirectory, final boolean force,
-		final boolean deleteOtherVersions) throws IOException
+		final OtherVersions otherVersionsPolicy) throws IOException
 	{
 		if (!"jar".equals(artifact.getType())) return;
 
@@ -162,32 +168,48 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 				".jar" : source.getName();
 		final File target = new File(targetDirectory, fileName);
 
+		boolean newerVersion = false;
+		final Collection<Path> otherVersions = getEncroachingVersions(Paths.get(imagejDirectory.toURI()), Paths.get(target.toURI()));
+		if (otherVersions != null && !otherVersions.isEmpty()) {
+			for (final Path file : otherVersions) {
+				switch (otherVersionsPolicy) {
+					case never:
+						getLog().warn("Possibly incompatible version exists: " + file.getFileName());
+						break;
+					case older:
+						final String toInstall = artifact.getVersion();
+						final Matcher matcher = versionPattern.matcher(file.getFileName().toString());
+						if (!matcher.matches()) break;
+						final String otherVersion = matcher.group(VERSION_INDEX).substring(1);
+						newerVersion = VersionUtils.compare(toInstall, otherVersion) < 0;
+						if (majorVersion(toInstall) != majorVersion(otherVersion))
+							getLog().warn("Found other version that is incompatible according to SemVer.");
+						if (newerVersion)
+							break;
+						//$FALL-THROUGH$
+					case always:
+						if (Files.deleteIfExists(file)) {
+							getLog().info("Deleted overridden " + file.getFileName());
+							newerVersion = false;
+						}
+						else getLog().warn("Could not delete overridden " + file.getFileName());
+						break;
+				}
+			}
+		}
+
 		if (!force && target.exists() &&
 			target.lastModified() > source.lastModified())
 		{
 			getLog().info("Dependency " + fileName + " is already there; skipping");
 		}
+		else if (newerVersion) {
+			getLog().info("A newer version for " + fileName + " was detected; skipping");
+		}
 		else {
 			getLog().info("Copying " + fileName + " to " + targetDirectory);
 			FileUtils.copyFile(source, target);
 		}
-
-		final Collection<Path> otherVersions = getEncroachingVersions(Paths.get(imagejDirectory.toURI()), Paths.get(target.toURI()));
-		if (otherVersions != null && !otherVersions.isEmpty()) {
-			for (final Path file : otherVersions) {
-				if (!deleteOtherVersions) {
-					getLog().warn(
-						"Possibly incompatible version exists: " + file.getFileName());
-				}
-				else if (Files.deleteIfExists(file)) {
-					getLog().info("Deleted overridden " + file.getFileName());
-				}
-				else {
-					getLog().warn("Could not delete overridden " + file.getFileName());
-				}
-			}
-		}
-
 	}
 
 	private static boolean isIJ1Plugin(final File file) {
@@ -214,7 +236,22 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 		+ "(-\\d+(\\.\\d+|\\d{7})+[a-z]?\\d?(-[A-Za-z0-9.]+?|\\.GA)*?)?"
 		+ "((-(swing|swt|sources|javadoc|native|linux-x86|linux-x86_64|macosx-x86_64|windows-x86|windows-x86_64|android-arm|android-x86|natives-windows|natives-macos|natives-linux))?(\\.jar(-[a-z]*)?))");
 	private final static int PREFIX_INDEX = 1;
+	private final static int VERSION_INDEX = 2;
 	private final static int SUFFIX_INDEX = 5;
+
+	/**
+	 * Extracts the major version (according to SemVer) from a version string.
+	 * If no dot is found, the input is returned.
+	 * 
+	 * @param v
+	 *            SemVer version string
+	 * @return The major version (according to SemVer) as {@code String}.
+	 */
+	private String majorVersion( String v )
+	{
+	final int dot = v.indexOf('.');
+	return dot < 0 ? v : v.substring(0, dot);
+	}
 
 	/**
 	 * Looks for files in {@code directory} with the same base name as

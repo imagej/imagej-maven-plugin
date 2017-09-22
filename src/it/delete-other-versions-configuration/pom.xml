@@ -49,9 +49,6 @@
 				<groupId>net.imagej</groupId>
 				<artifactId>imagej-maven-plugin</artifactId>
 				<version>${imagej-maven.version}</version>
-				<configuration>
-					<deleteOtherVersions>false</deleteOtherVersions>
-				</configuration>
 				<executions>
 					<execution>
 						<id>copy-jars</id>
@@ -59,6 +56,9 @@
 						<goals>
 							<goal>copy-jars</goal>
 						</goals>
+						<configuration>
+							<deleteOtherVersions>false</deleteOtherVersions>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

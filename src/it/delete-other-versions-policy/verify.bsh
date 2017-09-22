@@ -30,6 +30,23 @@
  */
 source(new File(basedir, "../../../src/it/lib.bsh").getPath());
 
+// copy-jars
 assertTrue("Should exist: " + plugin, plugin.exists());
-obsolete = new File(plugins, "Example_PlugIn-0.9.0-obsolete.jar");
-assertTrue("Should still exist: " + obsolete, obsolete.exists());
+newer = new File(plugins, "Example_PlugIn-1.1.0.jar");
+assertTrue("Should not exist: " + newer, !newer.exists());
+
+// install-artifact
+other = new File(basedir, "target/Other.app/");
+assertTrue("Should exist: "+ other, other.exists());
+
+otherPlugins = new File(other, "plugins/");
+assertTrue("Should exist: "+ otherPlugins, otherPlugins.exists());
+
+newer = new File(otherPlugins, "Example_PlugIn-2.1.0.jar");
+assertTrue("Should exist: " + newer, newer.exists());
+toInstall = new File(otherPlugins, "Example_PlugIn-1.0.0-SNAPSHOT.jar");
+assertTrue("Should not exist: " + newer, !toInstall.exists());
+
+buildLog = readFile(new File(basedir, "build.log"));
+assertTrue("Found other version that is incompatible':\n" + buildLog,
+	buildLog.contains("Found other version that is incompatible"));
