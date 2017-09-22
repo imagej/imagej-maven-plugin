@@ -221,6 +221,9 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 	@Parameter( defaultValue = "${mojoExecution}", readonly = true )
 	MojoExecution mojoExecution;
 
+	@Parameter(property = ignoreDependenciesProperty, defaultValue = "false")
+	private boolean ignoreDependencies;
+
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		// Keep backwards compatibility to delete.other.versions
@@ -313,8 +316,8 @@ public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 						installArtifact( result.getArtifact(), imagejDir, imagejSubdirectory, false, deleteOtherVersionsPolicy );
 						continue;
 					}
-					installArtifact(result.getArtifact(), imagejDir, false,
-						deleteOtherVersionsPolicy);
+					if ( !ignoreDependencies )
+						installArtifact( result.getArtifact(), imagejDir, false, deleteOtherVersionsPolicy );
 				}
 				catch (IOException e) {
 					throw new MojoExecutionException("Couldn't download artifact " +

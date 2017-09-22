@@ -128,7 +128,10 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 
 	@Parameter( defaultValue = "${mojoExecution}", readonly = true )
 	MojoExecution mojoExecution;
-	
+
+	@Parameter(property = ignoreDependenciesProperty, defaultValue = "false")
+	private boolean ignoreDependencies;
+
 	@Override
 	public void execute() throws MojoExecutionException {
 		// Keep backwards compatibility to delete.other.versions
@@ -172,7 +175,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 
 		try {
 			TransformableFilter scopeFilter = ScopeFilter.excluding("system", "provided", "test");
-			
+
 			ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
 			buildingRequest.setProject( project );
 
@@ -185,7 +188,8 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 								deleteOtherVersionsPolicy);
 							continue;
 						}
-						installArtifact(result.getArtifact(), imagejDir, false, deleteOtherVersionsPolicy);
+						if ( !ignoreDependencies )
+							installArtifact( result.getArtifact(), imagejDir, false, deleteOtherVersionsPolicy );
 					}
 					catch (IOException e) {
 						throw new MojoExecutionException("Couldn't download artifact " +

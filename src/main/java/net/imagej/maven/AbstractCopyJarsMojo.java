@@ -74,6 +74,7 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 	public static final String imagejSubdirectoryProperty = "imagej.app.subdirectory";
 	public static final String deleteOtherVersionsProperty = "delete.other.versions";
 	public static final String deleteOtherVersionsPolicyProperty = "imagej.deleteOtherVersions";
+	public static final String ignoreDependenciesProperty = "imagej.ignoreDependencies";
 
 	public enum OtherVersions {
 			always, older, never
