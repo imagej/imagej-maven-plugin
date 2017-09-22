@@ -34,3 +34,6 @@ subdirectory = new File(plugins, "Test/Directory/");
 assertTrue("Should exist: " + subdirectory, subdirectory.exists());
 jar = new File(subdirectory, "Example_PlugIn-1.0.0-SNAPSHOT.jar");
 assertTrue("Should exist: " + jar, jar.exists());
+
+subdirectoryPlugin = new File(ijDir, "../Other.app/jars/Subdirectory/Example_PlugIn-1.0.0-SNAPSHOT.jar");
+assertTrue("Should exist: " + subdirectoryPlugin, subdirectoryPlugin.exists());
