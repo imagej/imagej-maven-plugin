@@ -6,7 +6,12 @@ branches:
   - "/.*-[0-9]+\\..*/"
 install: true
 script: ".travis/build.sh"
+cache:
+  directories:
+  - "~/.m2/repository"
 env:
   global:
-  - secure: xg7xmBfeuFJUT6o7jJKHCCavqjFPBP46dNG4uEiljJWUq83Tx8ZYpCvC2LLLttIGF5O8ALbpT4hdRbhPdde8JRiwCNHoazKN+K3Jti1akBom3+gqs1DFtCzS5+WFXdDy2Ju+otEgZViuZWTNVXL/xqsEJJMLAvuFB+zmlCFnV7E=
-  - secure: oV18G7tcbPoDY/AWYqMQ23Q8xCW7Kv7E+9On1EK9gAYRMXDEUbJ0cVl4vzbeEnzl3Hv8uG/i9RCtch9YOe7ElMDr9rJrYJVCnyfyHsMhl85aviKMADlUurrB2A9jiyTEK7OqEEULStfM/9U9t1Mm8vx/DxfxB2BngNLS6ULj1A4=
+  - secure: ZHTksmFM7ogJgzyaDQdIisu1BPP3IP3WghZEBJsRWDkGMVc7GthUTgNECjj2G8GH8V6M2ilOWjlm+rPPsq32Zd+pYH+O6fsparpUbl54BXn7Cqf1a9m8mrplnz8Vx1L84mLwUdQz2Tgaae170aQvXpqwiAOqcaZgLg2Y/fa2cx8=
+  - secure: KXPOrb8tbEnOLooaPVS/bCq0hXBYjADoVgCId4R9LVmwLmTLm9eiVUyja8574UhzcmeaePa6AUpLyyuxA1IUTj8md3TA02CgYxFmOJNEBcGbHXdM7ivzARhqyKKUcdYNqQRYJ/TMP3ehc9tjBMOa28VyH0cE1PVoDdDcsKZPATo=
+  - secure: FpokZykB6oZwggkw3iNkTEddJK+LCeY43flof2j76IQbjn26awF9MIu9lJkMdFp+LcmTy7/dz+4IxG9tFGqcRbXfUwGq+w0O5hKnGKqSrkZs0CZhaAoghYP1+s7w/QlCoWX8BTPuCC6c0if2X9Wh9tBaj7+o5pk/1WpPeahnPuQ=
+  - secure: kUg9r2WxnHDLs8TdWIh2lNix4IwJexfZBAnNFi/kXT6cfqeymqgrCrdCUpUQx69k76jKKR/IFx9x+HF39PfDFTY3Mys2Bvf/z29Vn+oGeAmk5k3IwzV/N5uMUw7VRV6tTo1QcyFUQr7yZITvqaed4TYHBUtuw/wd2BbgSfhwHvA=
