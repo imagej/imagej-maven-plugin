@@ -181,12 +181,22 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 						final String toInstall = artifact.getVersion();
 						final Matcher matcher = versionPattern.matcher(otherName.toString());
 						if (!matcher.matches()) break;
-						final String otherVersion = matcher.group(VERSION_INDEX).substring(1);
-						newerVersion = VersionUtils.compare(toInstall, otherVersion) < 0;
-						if (majorVersion(toInstall) != majorVersion(otherVersion))
-							getLog().warn("Found other version that is incompatible according to SemVer.");
-						if (newerVersion)
-							break;
+						final String group = matcher.group(VERSION_INDEX);
+						if (group == null) {
+							newerVersion = true;
+							getLog().warn("Impenetrable version suffix for file: " +
+								otherName);
+						}
+						else {
+							final String otherVersion = group.substring(1);
+							newerVersion = VersionUtils.compare(toInstall, otherVersion) < 0;
+							if (majorVersion(toInstall) != majorVersion(otherVersion)) {
+								getLog().warn(
+									"Found other version that is incompatible according to SemVer: " +
+										otherVersion);
+							}
+						}
+						if (newerVersion) break;
 						//$FALL-THROUGH$
 					case always:
 						if (Files.deleteIfExists(other)) {
