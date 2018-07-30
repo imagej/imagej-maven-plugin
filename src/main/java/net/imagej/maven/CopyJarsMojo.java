@@ -169,6 +169,7 @@ public class CopyJarsMojo extends AbstractCopyJarsMojo {
 		coordinate.setGroupId(project.getGroupId());
 		coordinate.setArtifactId(project.getArtifactId());
 		coordinate.setVersion(project.getVersion());
+		coordinate.setType(project.getPackaging());
 
 		try {
 			TransformableFilter scopeFilter = ScopeFilter.excluding("system", "provided", "test");
