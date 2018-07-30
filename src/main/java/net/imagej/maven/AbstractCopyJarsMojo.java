@@ -80,7 +80,6 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 	}
 
 	protected boolean hasIJ1Dependency(final MavenProject project) {
-		@SuppressWarnings("unchecked")
 		final List<Dependency> dependencies = project.getDependencies();
 		for (final Dependency dependency : dependencies) {
 			final String artifactId = dependency.getArtifactId();
@@ -101,7 +100,7 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 			interpolator.addValueSource(new PropertiesBasedValueSource(System
 				.getProperties()));
 
-			List<String> synonymPrefixes = new ArrayList<String>();
+			List<String> synonymPrefixes = new ArrayList<>();
 			synonymPrefixes.add("project.");
 			synonymPrefixes.add("pom.");
 
@@ -162,23 +161,25 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 		else {
 			targetDirectory = new File(imagejDirectory, "jars");
 		}
-		final String fileName =
-			"Fiji_Updater".equals(artifact.getArtifactId()) ? artifact
-				.getArtifactId() +
-				".jar" : source.getName();
+		final String fileName = "Fiji_Updater".equals(artifact.getArtifactId())
+			? artifact.getArtifactId() + ".jar" : source.getName();
 		final File target = new File(targetDirectory, fileName);
 
 		boolean newerVersion = false;
-		final Collection<Path> otherVersions = getEncroachingVersions(Paths.get(imagejDirectory.toURI()), Paths.get(target.toURI()));
+		final Path directoryPath = Paths.get(imagejDirectory.toURI());
+		final Path targetPath = Paths.get(target.toURI());
+		final Collection<Path> otherVersions = //
+			getEncroachingVersions(directoryPath, targetPath);
 		if (otherVersions != null && !otherVersions.isEmpty()) {
-			for (final Path file : otherVersions) {
+			for (final Path other : otherVersions) {
+				final Path otherName = other.getFileName();
 				switch (otherVersionsPolicy) {
 					case never:
-						getLog().warn("Possibly incompatible version exists: " + file.getFileName());
+						getLog().warn("Possibly incompatible version exists: " + otherName);
 						break;
 					case older:
 						final String toInstall = artifact.getVersion();
-						final Matcher matcher = versionPattern.matcher(file.getFileName().toString());
+						final Matcher matcher = versionPattern.matcher(otherName.toString());
 						if (!matcher.matches()) break;
 						final String otherVersion = matcher.group(VERSION_INDEX).substring(1);
 						newerVersion = VersionUtils.compare(toInstall, otherVersion) < 0;
@@ -188,11 +189,11 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 							break;
 						//$FALL-THROUGH$
 					case always:
-						if (Files.deleteIfExists(file)) {
-							getLog().info("Deleted overridden " + file.getFileName());
+						if (Files.deleteIfExists(other)) {
+							getLog().info("Deleted overridden " + otherName);
 							newerVersion = false;
 						}
-						else getLog().warn("Could not delete overridden " + file.getFileName());
+						else getLog().warn("Could not delete overridden " + otherName);
 						break;
 				}
 			}
@@ -215,18 +216,20 @@ public abstract class AbstractCopyJarsMojo extends AbstractMojo {
 	private static boolean isIJ1Plugin(final File file) {
 		final String name = file.getName();
 		if (name.indexOf('_') < 0 || !file.exists()) return false;
-		if (file.isDirectory()) return new File(file,
-			"src/main/resources/plugins.config").exists();
-		if (name.endsWith(".jar")) try {
-			final JarFile jar = new JarFile(file);
-			for (JarEntry entry : Collections.list(jar.entries()))
+		if (file.isDirectory()) {
+			return new File(file, "src/main/resources/plugins.config").exists();
+		}
+		if (!name.endsWith(".jar")) return false;
+
+		try (final JarFile jar = new JarFile(file)) {
+			for (final JarEntry entry : Collections.list(jar.entries())) {
 				if (entry.getName().equals("plugins.config")) {
 					jar.close();
 					return true;
 				}
-			jar.close();
+			}
 		}
-		catch (Throwable t) {
+		catch (final Throwable t) {
 			// obviously not a plugin...
 		}
 		return false;
