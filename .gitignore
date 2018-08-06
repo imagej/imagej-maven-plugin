@@ -3,3 +3,6 @@
 /.settings/
 /target/
 *.swp
+
+# macOS
+.DS_Store
