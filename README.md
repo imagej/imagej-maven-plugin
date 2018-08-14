@@ -1,3 +1,9 @@
+**This Maven plugin is deprecated since the _copy-jars_ goal has been migrated to [`scijava-maven-plugin`](https://github.com/scijava/scijava-maven-plugin). We have made sure to keep backward compatibility with `imagej.*` properties, but recommend to replace them with `scijava.*` properties when switching to `scijava-maven-plugin`.**
+
+**If your project has at least `pom-scijava:X.Y.Z` as parent, `scijava-maven-plugin` has been made the default Maven plugin for handling installation of SciJava and ImageJ plugins.**
+
+---
+
 [![](https://img.shields.io/maven-central/v/net.imagej/imagej-maven-plugin.svg)](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.imagej%22%20AND%20a%3A%22imagej-maven-plugin%22)
 [![](https://travis-ci.org/imagej/imagej-maven-plugin.svg?branch=master)](https://travis-ci.org/imagej/imagej-maven-plugin)
 
@@ -18,20 +24,6 @@ It provides one goal:
   of the _ImageJ.app/_ directory to be specified in the property
   _imagej.app.directory_ (which can be set on the Maven command-line). If said
   property is not set, the __copy-jars__ goal is skipped.
-
-It is recommended to use it implicitly by making the
-[SciJava POM](https://github.com/scijava/pom-scijava) the parent project:
-
-```xml
-<project ...>
-  <parent>
-    <groupId>org.scijava</groupId>
-    <artifactId>pom-scijava</artifactId>
-    <version>1.162</version>
-  </parent>
-  ...
-</project>
-```
 
 Alternatively, you can include the plugin explicitly in the life cycle:
 
