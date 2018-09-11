@@ -76,7 +76,10 @@ import org.codehaus.plexus.util.StringUtils;
  * structure.
  * 
  * @author Johannes Schindelin
+ * 
+ * @deprecated Use scijava-maven-plugin:install-artifact instead
  */
+@Deprecated
 @Mojo(name = "install-artifact", requiresProject=false)
 public class InstallArtifactMojo extends AbstractCopyJarsMojo {
 

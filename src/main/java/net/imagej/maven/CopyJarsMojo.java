@@ -58,7 +58,10 @@ import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator
  * structure.
  * 
  * @author Johannes Schindelin
+ * 
+ * @deprecated Use scijava-maven-plugin:copy-jars instead
  */
+@Deprecated()
 @Mojo(name = "copy-jars", requiresProject = true, requiresOnline = true)
 public class CopyJarsMojo extends AbstractCopyJarsMojo {
 
