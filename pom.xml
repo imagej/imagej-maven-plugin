@@ -76,7 +76,7 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/imagej/imagej-maven-plugin</connection>
+		<connection>scm:git:https://github.com/imagej/imagej-maven-plugin</connection>
 		<developerConnection>scm:git:git@github.com:imagej/imagej-maven-plugin</developerConnection>
 		<tag>HEAD</tag>
 		<url>https://github.com/imagej/imagej-maven-plugin</url>
